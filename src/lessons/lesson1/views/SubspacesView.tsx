@@ -17,7 +17,7 @@ import { PerpendicularPair } from './SceneContents';
 const realSpace = (k: number) => `ℝ${String(k).replace(/\d/g, (d) => '⁰¹²³⁴⁵⁶⁷⁸⁹'[Number(d)])}`;
 
 const basisTex = (vs: Vector[]) =>
-  vs.length === 0 ? '\\{\\mathbf{0}\\}' : vs.map((v) => `(${v.map((x) => x.toTex()).join(',')})`).join(',\;');
+  vs.length === 0 ? '\\{\\mathbf{0}\\}' : vs.map((v) => `(${v.map((x) => x.toTex()).join(',')})`).join(',\\;');
 const f3 = (vs: Vector[]) => vs.map((v) => toVec3(toFloatVector(v)));
 
 /** §5.7 */

@@ -32,12 +32,15 @@ export function ColumnPictureContents({
   resultColor,
   targetColor,
   onDragB,
+  targetLabel = 'b',
 }: {
   scene: ColumnPictureScene;
   resultColor: string;
   targetColor: string;
   /** When given, b is a draggable handle (snaps to integers). */
   onDragB?: (b: Vec3) => void;
+  /** TeX label for the target (default "b"). */
+  targetLabel?: string;
 }) {
   const labelAt: Vec3 = [scene.b[0] + 0.35, scene.b[1] + 0.35, scene.b[2] + (scene.dim === 3 ? 0.35 : 0)];
   return (
@@ -57,7 +60,7 @@ export function ColumnPictureContents({
       ) : (
         <Point position={scene.b} color={targetColor} radius={0.16} />
       )}
-      <Label position={labelAt} tex="b" color={targetColor} />
+      <Label position={labelAt} tex={targetLabel} color={targetColor} />
     </>
   );
 }

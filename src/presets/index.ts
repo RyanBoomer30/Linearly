@@ -5,6 +5,7 @@ export type ViewId =
   | 'columnVsRow'
   | 'elimination'
   | 'products'
+  | 'cr'
   | 'subspaces'
   | 'bigPicture';
 
@@ -39,7 +40,7 @@ export const PRESETS: Preset[] = [
   { id: 'consistent3x3', name: '3×3 consistent system', A: A3, b: ['2', '5', '4'], view: 'row' },
   { id: 'inconsistent3x3', name: '3×3 inconsistent system', A: A3, b: ['2', '5', '5'], view: 'row' },
   { id: 'outer', name: 'Outer product', A: A3, b: ['2', '5', '4'], u: ['1', '1', '1'], v: ['1', '2', '3'], view: 'products' },
-  { id: 'cr', name: 'CR factorization', A: A3, b: ['2', '5', '4'], view: 'products' },
+  { id: 'cr', name: 'CR factorization', A: A3, b: ['2', '5', '4'], view: 'cr' },
   {
     // Strang, "The Four Fundamental Subspaces: 4 Lines", §2: 3×4, rank 2.
     id: 'strang3x4',
@@ -88,7 +89,8 @@ export const DEFAULT_PRESET_FOR_VIEW: Record<ViewId, string> = {
   column: 'system2x2',
   columnVsRow: 'consistent3x3',
   elimination: 'consistent3x3',
-  products: 'cr',
+  products: 'outer',
+  cr: 'cr',
   subspaces: 'consistent3x3',
   bigPicture: 'consistent3x3',
 };

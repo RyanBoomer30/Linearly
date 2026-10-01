@@ -7,6 +7,7 @@ import { EliminationView } from './views/EliminationView';
 import { ProductsView } from './views/ProductsView';
 import { RowPictureView } from './views/RowPictureView';
 import { ColumnVsRowView } from './views/ColumnVsRowView';
+import { CRFactorizationView } from './views/CRFactorizationView';
 import { SubspacesView } from './views/SubspacesView';
 
 const VIEWS: { id: ViewId; label: string; component: ComponentType }[] = [
@@ -14,7 +15,8 @@ const VIEWS: { id: ViewId; label: string; component: ComponentType }[] = [
   { id: 'column', label: 'Column picture & C(A)', component: ColumnPictureView },
   { id: 'columnVsRow', label: 'Column vs row', component: ColumnVsRowView },
   { id: 'elimination', label: 'Elimination', component: EliminationView },
-  { id: 'products', label: 'Products & CR', component: ProductsView },
+  { id: 'products', label: 'Products', component: ProductsView },
+  { id: 'cr', label: 'CR factorization', component: CRFactorizationView },
   { id: 'subspaces', label: 'Four subspaces', component: SubspacesView },
   { id: 'bigPicture', label: 'Big picture', component: BigPictureView },
 ];

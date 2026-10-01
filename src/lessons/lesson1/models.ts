@@ -8,6 +8,7 @@ import { matrixToTex } from '../../components/display/MatrixTex';
 import { columnRecipe, crFactorization, type CRFactorization } from '../../core/factorization';
 import {
   getColumn,
+  matrixEquals,
   shape,
   splitAugmented,
   toFloatVector,
@@ -17,7 +18,7 @@ import {
   type Matrix,
   type Vector,
 } from '../../core/matrix';
-import { addVectors, dot, matVec, normFloat, outer, scaleVector, subVectors } from '../../core/products';
+import { addVectors, dot, matMul, matVec, normFloat, outer, scaleVector, subVectors } from '../../core/products';
 import { decomposeColumnLeftNull, decomposeRowNull } from '../../core/projection';
 import { Rational } from '../../core/rational';
 import { pivotColumns, rank, rrefAugmented, type AugmentedRrefResult } from '../../core/rref';
@@ -556,4 +557,154 @@ export function subspaceInfo(model: BigPictureModel, id: SubspaceId): SubspaceIn
   };
   const { basis, ...rest } = table[id];
   return { id, ...rest, basisTex: basis.map(colTex) };
+}
+
+// CR factorization explainer (§5.9) -------------------------------------------
+
+export interface CRColumnVerdict {
+  /** 0-based column of A. */
+  column: number;
+  /** True when the column adds a new direction and so joins C. */
+  independent: boolean;
+  /** Column j of R: the weights on C's columns that rebuild a_j. */
+  recipe: Rational[];
+  /** "a_3 = a_1 + a_2" (colored) or "a_1 = c_1". */
+  tex: string;
+  /** One sentence in the notes' language. */
+  reason: string;
+}
+
+export interface CRExplainer {
+  m: number;
+  n: number;
+  rank: number;
+  cr: CRFactorization;
+  /** Color-coded A = C R. */
+  factorTex: string;
+  /** "(3×3) = (3×2)(2×3)" */
+  shapeTex: string;
+  /** Step 2: each column of A, left to right. */
+  columns: CRColumnVerdict[];
+  /** Step 4: rref(A) with pivots marked and the zero rows greyed out. */
+  rrefTex: string;
+  zeroRows: number[];
+  /** Step 5: row i of A = Σ C[i][k] · (row k of R). */
+  rowRecipes: { row: number; tex: string }[];
+  /** Step 7: c_k r_kᵀ for each k, and their sum. */
+  rankOneTex: string[];
+  rankOneSumTex: string;
+  /** Step 8: numbers stored for A versus for C and R. */
+  storage: { full: number; factored: number };
+  /** C·R reproduces A exactly. */
+  reproduces: boolean;
+}
+
+const sub = (k: number) => String(k).replace(/\d/g, (d) => '₀₁₂₃₄₅₆₇₈₉'[Number(d)]);
+const GREY = '#9ca3af';
+
+export function crExplainer(A: Matrix): CRExplainer {
+  const { rows: m, cols: n } = shape(A);
+  const cr = crFactorization(A);
+  const r = cr.pivotCols.length;
+  const color = (k: number) => columnColor(cr.pivotCols[k]);
+  const name = (k: number) => `a_${cr.pivotCols[k] + 1}`;
+
+  const columns: CRColumnVerdict[] = Array.from({ length: n }, (_, j) => {
+    const recipe = columnRecipe(cr, j);
+    const k = cr.pivotCols.indexOf(j);
+    if (k >= 0) {
+      const earlier = cr.pivotCols.slice(0, k).map((p) => `a${sub(p + 1)}`);
+      return {
+        column: j,
+        independent: true,
+        recipe,
+        tex: `${texColor(color(k), `a_${j + 1}`)} = ${texColor(color(k), `c_${k + 1}`)}`,
+        reason:
+          earlier.length === 0
+            ? `a${sub(j + 1)} is the first nonzero column, so it is a new direction: it becomes c${sub(k + 1)}.`
+            : `a${sub(j + 1)} is not a combination of ${earlier.join(' and ')}, so it adds a new direction: it becomes c${sub(k + 1)}.`,
+      };
+    }
+    const terms = recipe
+      .map((c, i) => (c.isZero() ? '' : termTex(c, texColor(color(i), name(i)), false)))
+      .join('')
+      .replace(/^ \+ /, '')
+      .replace(/^ - /, '-');
+    const isZeroCol = recipe.every((c) => c.isZero());
+    return {
+      column: j,
+      independent: false,
+      recipe,
+      tex: `a_${j + 1} = ${isZeroCol ? '0' : terms}`,
+      reason: isZeroCol
+        ? `a${sub(j + 1)} is the zero column: it adds nothing, so it stays out of C.`
+        : `a${sub(j + 1)} is a combination of columns already in C, so it adds no new direction and stays out of C.`,
+    };
+  });
+
+  // Step 4: rref(A) with pivots marked and zero rows greyed.
+  const R0 = rrefAugmented(A, zeroVector(m)).matrix.map((row) => row.slice(0, n));
+  const zeroRows = R0.map((_, i) => i).filter((i) => i >= r);
+  const pivotCells = Object.fromEntries(cr.pivotCols.map((c, i) => [`${i},${c}`, '#F0E442']));
+  const rrefEntries = R0.map((row, i) =>
+    row.map((x, j) => {
+      if (zeroRows.includes(i)) return texColor(GREY, x.toTex());
+      if (cr.pivotCols[i] === j) return texColor('#000000', x.toTex());
+      return x.toTex();
+    }),
+  );
+  const rrefTex = matrixToTex(rrefEntries, false, { entryBackgrounds: pivotCells });
+
+  // Step 5: rows of A from rows of R.
+  const rowRecipes = A.map((row, i) => {
+    const terms = cr.C[i]
+      .map((c, k) => (c.isZero() ? '' : termTex(c, texColor(color(k), tupleTex(cr.R[k])), false)))
+      .join('')
+      .replace(/^ \+ /, '')
+      .replace(/^ - /, '-');
+    return { row: i, tex: `${tupleTex(row)} = ${terms || '0'}` };
+  });
+
+  // Step 7: rank-one pieces.
+  const pieces = cr.pivotCols.map((_, k) => outer(getColumn(cr.C, k), cr.R[k]));
+  const toEntries = (M: Matrix) => M.map((row) => row.map((x) => x.toTex()));
+  const rankOneTex = pieces.map(
+    (P, k) =>
+      `${texColor(color(k), `c_${k + 1}`)}\\,${texColor(color(k), `r_${k + 1}^{T}`)} = ${colTex(getColumn(cr.C, k))}${matrixToTex(
+        [cr.R[k].map((x) => x.toTex())],
+        false,
+        {},
+      )} = ${matrixToTex(toEntries(P), false, {})}`,
+  );
+  const rankOneSumTex =
+    r === 0
+      ? 'A = 0'
+      : `A = ${pieces.map((P) => matrixToTex(toEntries(P), false, {})).join(' + ')} = ${matrixToTex(toEntries(A), false, {})}`;
+
+  return {
+    m,
+    n,
+    rank: r,
+    cr,
+    factorTex: crView(A, null).tex,
+    shapeTex: `\\underset{${m}\\times ${n}}{A} = \\underset{${m}\\times ${r}}{C}\\;\\underset{${r}\\times ${n}}{R}`,
+    columns,
+    rrefTex,
+    zeroRows,
+    rowRecipes,
+    rankOneTex,
+    rankOneSumTex,
+    storage: { full: m * n, factored: m * r + r * n },
+    reproduces: r === 0 ? A.every((row) => row.every((x) => x.isZero())) : matrixEquals(matMul(cr.C, cr.R), A),
+  };
+}
+
+/** Step 3 canvas: C's columns, weighted by column j of R, landing exactly on a_j. */
+export function crColumnScene(A: Matrix, j: number): ColumnPictureScene {
+  const cr = crFactorization(A);
+  const scene = columnPictureScene(cr.C, getColumn(A, j), columnRecipe(cr, j));
+  // Color C's k-th column like the column of A it came from.
+  const recolor = <T extends { color: string }>(items: T[]) =>
+    items.map((it, k) => ({ ...it, color: columnColor(cr.pivotCols[k]) }));
+  return { ...scene, columns: recolor(scene.columns), tipToTail: recolor(scene.tipToTail) };
 }
