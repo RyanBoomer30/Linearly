@@ -2,15 +2,67 @@
  * View-models for the Lesson 1 views: turn exact core results into what the
  * renderer draws (floats, colors, labels). Kept pure so they can be unit tested.
  */
-import type { Vec3 } from '../../components/canvas/types';
-import type { CRFactorization } from '../../core/factorization';
-import type { Matrix, Vector } from '../../core/matrix';
-import { notImplemented } from '../../core/notImplemented';
-import type { Rational } from '../../core/rational';
-import type { AugmentedRrefResult } from '../../core/rref';
-import type { SolutionSet } from '../../core/solve';
-import type { FourSubspaces } from '../../core/subspaces';
+import { toVec3, type Vec3 } from '../../components/canvas/types';
 import type { BigPictureLabels, SubspaceId } from '../../components/diagram/types';
+import { matrixToTex } from '../../components/display/MatrixTex';
+import { columnRecipe, crFactorization, type CRFactorization } from '../../core/factorization';
+import {
+  getColumn,
+  shape,
+  splitAugmented,
+  toFloatVector,
+  transpose,
+  vectorEquals,
+  zeroVector,
+  type Matrix,
+  type Vector,
+} from '../../core/matrix';
+import { addVectors, dot, matVec, normFloat, outer, scaleVector, subVectors } from '../../core/products';
+import { decomposeColumnLeftNull, decomposeRowNull } from '../../core/projection';
+import { Rational } from '../../core/rational';
+import { pivotColumns, rank, rrefAugmented, type AugmentedRrefResult } from '../../core/rref';
+import { evaluateSolution, solve, type SolutionSet } from '../../core/solve';
+import { fourSubspaces, inColumnSpace, type FourSubspaces } from '../../core/subspaces';
+import { columnColor, rowColor } from '../../theme/colors';
+
+// Formatting helpers ---------------------------------------------------------
+
+const f3 = (v: Vector): Vec3 => toVec3(toFloatVector(v));
+const texColor = (color: string, tex: string) => `\\textcolor{${color}}{${tex}}`;
+/** Column vector as TeX. */
+const colTex = (v: Vector) => `\\begin{bmatrix}${v.map((x) => x.toTex()).join(' \\\\ ')}\\end{bmatrix}`;
+/** Plain-text tuple with a typographic minus: (−7/54, 1/27). */
+const tuple = (v: Vector) => `(${v.map((x) => x.toString().replace('-', '−')).join(', ')})`;
+/** TeX tuple: (1,2,3). */
+const tupleTex = (v: Vector) => `(${v.map((x) => x.toTex()).join(',')})`;
+const supDigits = (k: number) => String(k).replace(/\d/g, (d) => '⁰¹²³⁴⁵⁶⁷⁸⁹'[Number(d)]);
+const realSpace = (k: number) => `ℝ${supDigits(k)}`;
+
+/** Coefficient in front of a term, given whether it is the first term. */
+function termTex(c: Rational, body: string, first: boolean): string {
+  const neg = c.isNegative();
+  const mag = c.abs();
+  const coef = mag.equals(Rational.ONE) ? '' : mag.toTex();
+  const sign = first ? (neg ? '-' : '') : neg ? ' - ' : ' + ';
+  return `${sign}${coef}${body}`;
+}
+
+/** "2x_1 - x_2 = 1" */
+function equationTex(row: Vector, rhs: Rational): string {
+  let lhs = '';
+  row.forEach((c, j) => {
+    if (c.isZero()) return;
+    lhs += termTex(c, `x_${j + 1}`, lhs === '');
+  });
+  return `${lhs || '0'} = ${rhs.toTex()}`;
+}
+
+function requireDim(k: number, what: string): 2 | 3 {
+  if (k !== 2 && k !== 3) throw new RangeError(`${what} can only be drawn in ℝ² or ℝ³ (this one is ${realSpace(k)})`);
+  return k;
+}
+
+const orZeros = (b: Vector | null | undefined, m: number) => b ?? zeroVector(m);
 
 // §5.1 Row picture ---------------------------------------------------------
 
@@ -36,8 +88,38 @@ export interface RowPictureScene {
   equationsTex: string[];
 }
 
-export function rowPictureScene(A: Matrix, b: Vector): RowPictureScene {
-  return notImplemented('rowPictureScene');
+export function rowPictureScene(A: Matrix, b: Vector | null): RowPictureScene {
+  const { rows: m, cols: n } = shape(A);
+  const dim = requireDim(n, 'The row picture');
+  const rhs = orZeros(b, m);
+  const rowsF = A.map((r) => toFloatVector(r));
+  const lines =
+    dim === 2
+      ? rowsF.map(([a, bb], i) => ({ a, b: bb, c: rhs[i].toNumber(), color: rowColor(i), tex: equationTex(A[i], rhs[i]) }))
+      : [];
+  const planes =
+    dim === 3
+      ? rowsF.map((r, i) => ({ normal: toVec3(r), offset: rhs[i].toNumber(), color: rowColor(i), tex: equationTex(A[i], rhs[i]) }))
+      : [];
+
+  const sol = solve(A, rhs);
+  let solution: SolutionMarker;
+  if (sol.kind === 'none') {
+    solution = { kind: 'none', message: `No solution: elimination gives 0 = 1 in row ${sol.inconsistentRow + 1}, so the ${dim === 2 ? 'lines' : 'planes'} have no common point.` };
+  } else if (sol.kind === 'unique') {
+    solution = { kind: 'point', at: f3(sol.x) };
+  } else if (sol.nullBasis.length === 1) {
+    solution = { kind: 'line', point: f3(sol.particular), dir: f3(sol.nullBasis[0]) };
+  } else if (sol.nullBasis.length === 2 && dim === 3) {
+    solution = { kind: 'plane', point: f3(sol.particular), spanning: [f3(sol.nullBasis[0]), f3(sol.nullBasis[1])] };
+  } else {
+    solution = { kind: 'none', message: `Every point of ${realSpace(n)} is a solution.` };
+  }
+
+  const xs = Array.from({ length: n }, (_, j) => `x_${j + 1}`).join(',');
+  const dotProductTex = `A x = \\begin{bmatrix}${A.map((r, i) => texColor(rowColor(i), `${tupleTex(r)}\\cdot(${xs})`)).join(' \\\\ ')}\\end{bmatrix}`;
+  const equationsTex = A.map((r, i) => texColor(rowColor(i), equationTex(r, rhs[i])));
+  return { dim, lines, planes, solution, dotProductTex, equationsTex };
 }
 
 // §5.2 Column picture ------------------------------------------------------
@@ -61,13 +143,57 @@ export interface ColumnPictureScene {
   combinationTex: string;
 }
 
-export function columnPictureScene(A: Matrix, b: Vector, x: Rational[]): ColumnPictureScene {
-  return notImplemented('columnPictureScene');
+export function columnPictureScene(A: Matrix, b: Vector | null, x: Rational[]): ColumnPictureScene {
+  const { rows: m, cols: n } = shape(A);
+  const dim = requireDim(m, 'The column picture');
+  if (x.length !== n) throw new RangeError('columnPictureScene: one weight per column');
+  const target = orZeros(b, m);
+  const cols = Array.from({ length: n }, (_, j) => getColumn(A, j));
+  const scaled = cols.map((c, j) => scaleVector(x[j], c));
+
+  const tipToTail: ColumnPictureScene['tipToTail'] = [];
+  let tip = zeroVector(m);
+  scaled.forEach((s, j) => {
+    const next = addVectors(tip, s);
+    tipToTail.push({ from: f3(tip), to: f3(next), color: columnColor(j) });
+    tip = next;
+  });
+  const Ax = tip;
+
+  // Complete the parallelogram: the later scaled columns drawn from the origin.
+  const guides: ColumnPictureScene['guides'] = [];
+  if (n === 2) {
+    guides.push({ from: [0, 0, 0], to: f3(scaled[1]), color: columnColor(1) });
+    guides.push({ from: f3(scaled[1]), to: f3(Ax), color: columnColor(0) });
+  } else {
+    scaled.slice(1).forEach((s, k) => guides.push({ from: [0, 0, 0], to: f3(s), color: columnColor(k + 1) }));
+  }
+
+  const expansionTex =
+    'A x = ' + cols.map((c, j) => `${j ? ' + ' : ''}x_${j + 1}${texColor(columnColor(j), colTex(c))}`).join('');
+  const combinationTex =
+    cols.map((c, j) => termTex(x[j], texColor(columnColor(j), colTex(c)), j === 0).replace(/^(-?)$/, '$10')).join('') +
+    ` = ${colTex(Ax)}`;
+
+  return {
+    dim,
+    columns: cols.map((c, j) => ({ to: f3(c), color: columnColor(j) })),
+    tipToTail,
+    Ax: f3(Ax),
+    b: f3(target),
+    distance: normFloat(subVectors(Ax, target)),
+    hit: vectorEquals(Ax, target),
+    guides,
+    expansionTex,
+    combinationTex,
+  };
 }
 
 /** L1-C4: exact slider targets for "Solve", or null when no solution exists. */
-export function solveTarget(A: Matrix, b: Vector): Rational[] | null {
-  return notImplemented('solveTarget');
+export function solveTarget(A: Matrix, b: Vector | null): Rational[] | null {
+  const sol = solve(A, orZeros(b, shape(A).rows));
+  if (sol.kind === 'none') return null;
+  return sol.kind === 'unique' ? sol.x : sol.particular;
 }
 
 // §5.3 Side-by-side + free variable -----------------------------------------
@@ -81,8 +207,14 @@ export interface FreeParameterState {
   columnScene: ColumnPictureScene;
 }
 
-export function freeParameterState(A: Matrix, b: Vector, t: Rational): FreeParameterState {
-  return notImplemented('freeParameterState');
+export function freeParameterState(A: Matrix, b: Vector | null, t: Rational): FreeParameterState {
+  const sol = solve(A, orZeros(b, shape(A).rows));
+  if (sol.kind === 'none') throw new RangeError('No solution, so there is no solution set to move along.');
+  const x =
+    sol.kind === 'unique'
+      ? sol.x
+      : evaluateSolution(sol.particular, sol.nullBasis, sol.nullBasis.map((_, i) => (i === 0 ? t : Rational.ZERO)));
+  return { x, rowPoint: f3(x), columnScene: columnPictureScene(A, b, x) };
 }
 
 // §5.4 Elimination ----------------------------------------------------------
@@ -95,13 +227,29 @@ export interface EliminationView {
   parametricTex: string | null;
 }
 
-export function eliminationView(A: Matrix, b: Vector): EliminationView {
-  return notImplemented('eliminationView');
+export function eliminationView(A: Matrix, b: Vector | null): EliminationView {
+  const { rows: m, cols: n } = shape(A);
+  const rhs = orZeros(b, m);
+  const rref = rrefAugmented(A, rhs);
+  const pivots = new Set(rref.pivotCols);
+  const freeCols = Array.from({ length: n }, (_, j) => j).filter((j) => !pivots.has(j));
+  const solution = solve(A, rhs);
+  let parametricTex: string | null = null;
+  if (solution.kind === 'unique') parametricTex = `x = ${colTex(solution.x)}`;
+  if (solution.kind === 'parametric') {
+    const params = solution.freeVars.length === 1 ? ['t'] : solution.freeVars.map((_, i) => `t_${i + 1}`);
+    parametricTex =
+      `x = ${colTex(solution.particular)}` + solution.nullBasis.map((v, i) => ` + ${params[i]}${colTex(v)}`).join('');
+  }
+  return { rref, freeCols, solution, parametricTex };
 }
 
 /** Row-picture planes for a given trace step (L1-G5). */
 export function rowPictureAtStep(view: EliminationView, stepIndex: number): RowPictureScene {
-  return notImplemented('rowPictureAtStep');
+  const steps = view.rref.trace.steps;
+  const step = steps[Math.max(0, Math.min(steps.length - 1, stepIndex))];
+  const [Ak, bk] = splitAugmented(step.matrix);
+  return rowPictureScene(Ak, bk);
 }
 
 // §5.5 Column space ---------------------------------------------------------
@@ -118,8 +266,23 @@ export interface ColumnSpaceScene {
   leftNullChecks: { y: Vec3; dot: string }[];
 }
 
-export function columnSpaceScene(A: Matrix, b: Vector): ColumnSpaceScene {
-  return notImplemented('columnSpaceScene');
+export function columnSpaceScene(A: Matrix, b: Vector | null): ColumnSpaceScene {
+  const m = shape(A).rows;
+  requireDim(m, 'The column space');
+  const target = orZeros(b, m);
+  const f = fourSubspaces(A);
+  const shapeOf = (r: number): ColumnSpaceScene['shape'] => (r === 0 ? 'point' : r === m ? 'all' : r === 1 ? 'line' : 'plane');
+  const pivots = pivotColumns(A);
+  const { e } = decomposeColumnLeftNull(A, target);
+  return {
+    rank: f.rank,
+    shape: shapeOf(f.rank),
+    basis: f.column.map((c, k) => ({ to: f3(c), color: columnColor(pivots[k]), column: pivots[k] })),
+    b: f3(target),
+    inSpace: inColumnSpace(A, target),
+    distance: normFloat(e),
+    leftNullChecks: f.leftNull.map((y) => ({ y: f3(y), dot: dot(y, target).toString() })),
+  };
 }
 
 // §5.6 Products + CR --------------------------------------------------------
@@ -142,7 +305,19 @@ export interface ProductsView {
 }
 
 export function productsView(u: Vector, v: Vector): ProductsView {
-  return notImplemented('productsView');
+  if (u.length !== v.length) throw new RangeError('uᵀv needs u and v to have the same length.');
+  const P = outer(u, v);
+  const n = u.length;
+  return {
+    innerTex: `u^{T}v = \\begin{bmatrix}${u.map((x) => x.toTex()).join(' & ')}\\end{bmatrix}${colTex(v)} = ${dot(u, v).toTex()}`,
+    outer: P,
+    outerRank: rank(P),
+    outerShapeTex: `(${n}\\times 1)(1\\times ${n}) = ${n}\\times ${n}`,
+    innerShapeTex: `(1\\times ${n})(${n}\\times 1) = 1\\times 1`,
+    outerCR: crFactorization(P),
+    columnMultiples: [...v],
+    rowMultiples: [...u],
+  };
 }
 
 export interface CRView {
@@ -158,7 +333,39 @@ export interface CRView {
 }
 
 export function crView(A: Matrix, selectedColumn: number | null): CRView {
-  return notImplemented('crView');
+  const cr = crFactorization(A);
+  const toTexEntries = (M: Matrix) => M.map((r) => r.map((x) => x.toTex()));
+  const pivotColor = (k: number) => columnColor(cr.pivotCols[k]);
+  const aColors = A[0].map((_, j) => {
+    const k = cr.pivotCols.indexOf(j);
+    return k >= 0 ? pivotColor(k) : undefined;
+  });
+  const hl = (j: number) => (selectedColumn === j ? '#fef08a' : undefined);
+  const Atex = matrixToTex(toTexEntries(A), false, {
+    columnColors: aColors,
+    entryBackgrounds: selectedColumn === null ? {} : Object.fromEntries(A.map((_, i) => [`${i},${selectedColumn}`, hl(selectedColumn)!])),
+  });
+  const Ctex = matrixToTex(toTexEntries(cr.C), false, { columnColors: cr.pivotCols.map((_, k) => pivotColor(k)) });
+  const Rtex = matrixToTex(toTexEntries(cr.R), false, {
+    rowBackgrounds: [],
+    entryBackgrounds:
+      selectedColumn === null ? {} : Object.fromEntries(cr.R.map((_, i) => [`${i},${selectedColumn}`, hl(selectedColumn)!])),
+  });
+  const tex = `\\underset{A}{${Atex}} = \\underset{C}{${Ctex}}\\,\\underset{R}{${Rtex}}`;
+
+  let recipeTex: string | null = null;
+  let columnProductTex: string | null = null;
+  if (selectedColumn !== null && selectedColumn < shape(A).cols) {
+    const coeffs = columnRecipe(cr, selectedColumn);
+    const cCols = cr.pivotCols.map((j) => getColumn(A, j));
+    const terms = coeffs.map((c, k) => termTex(c, texColor(pivotColor(k), colTex(cCols[k])), k === 0)).join('');
+    recipeTex = `${colTex(getColumn(A, selectedColumn))} = ${terms || '0'}`;
+    columnProductTex = `a_${selectedColumn + 1} = C ${colTex(getColumn(cr.R, selectedColumn))}`;
+  }
+
+  const r = cr.pivotCols.length;
+  const rankArgumentTex = `\\#\\text{columns of } C = ${r} = \\#\\text{rows of } R \\;\\Rightarrow\\; \\text{column rank} = \\text{row rank} = ${r}`;
+  return { cr, tex, recipeTex, columnProductTex, rankArgumentTex };
 }
 
 // §5.7 Four subspaces -------------------------------------------------------
@@ -172,7 +379,14 @@ export interface SubspacesView {
 }
 
 export function subspacesView(A: Matrix): SubspacesView {
-  return notImplemented('subspacesView');
+  const spaces = fourSubspaces(A);
+  const pairs = (xs: Vector[], ys: Vector[]) => xs.flatMap((x) => ys.map((y) => dot(x, y).toString()));
+  return {
+    spaces,
+    rowNullDots: pairs(spaces.row, spaces.nullSpace),
+    colLeftNullDots: pairs(spaces.column, spaces.leftNull),
+    rankNullityTex: `\\operatorname{rank} + \\operatorname{nullity} = ${spaces.rank} + ${spaces.nullSpace.length} = ${spaces.n} = n`,
+  };
 }
 
 // Big picture (Strang) ------------------------------------------------------
@@ -218,7 +432,64 @@ export interface BigPictureModel {
 
 /** Everything the Big picture view draws for A, a chosen x, and an optional target b. */
 export function bigPictureModel(A: Matrix, x: Vector, target: Vector | null): BigPictureModel {
-  return notImplemented('bigPictureModel');
+  const { rows: m, cols: n } = shape(A);
+  if (x.length !== n) throw new RangeError(`x needs ${n} entries, one per column of A`);
+  const spaces = fourSubspaces(A);
+  const { xr, xn } = decomposeRowNull(A, x);
+  const b = matVec(A, x);
+
+  let tgt: BigPictureModel['target'] = null;
+  if (target) {
+    if (target.length !== m) throw new RangeError(`b needs ${m} entries, one per row of A`);
+    const { p, e } = decomposeColumnLeftNull(A, target);
+    tgt = { t: target, p, e, Att: matVec(transpose(A), target) };
+  }
+
+  const labels: BigPictureLabels = {
+    x: `x = ${tuple(x)}`,
+    xr: `xᵣ = ${tuple(xr)}`,
+    xn: `xₙ = ${tuple(xn)}`,
+    b: `b = ${tuple(b)}`,
+  };
+  if (tgt) {
+    labels.t = `b = ${tuple(tgt.t)}`;
+    labels.p = `p = ${tuple(tgt.p)}`;
+    labels.e = `e = ${tuple(tgt.e)}`;
+    labels.Att = `Aᵀb = ${tuple(tgt.Att)}`;
+  }
+
+  return {
+    m,
+    n,
+    rank: spaces.rank,
+    spaces,
+    x,
+    xr,
+    xn,
+    b,
+    target: tgt,
+    checks: {
+      xrDotXn: dot(xr, xn),
+      Axn: matVec(A, xn),
+      Axr: matVec(A, xr),
+      pDotE: tgt ? dot(tgt.p, tgt.e) : null,
+      Ate: tgt ? matVec(transpose(A), tgt.e) : null,
+    },
+    labels,
+    scene: {
+      rowSpan: spaces.row.map(f3),
+      nullSpan: spaces.nullSpace.map(f3),
+      columnSpan: spaces.column.map(f3),
+      leftNullSpan: spaces.leftNull.map(f3),
+      x: f3(x),
+      xr: f3(xr),
+      xn: f3(xn),
+      b: f3(b),
+      t: tgt && f3(tgt.t),
+      p: tgt && f3(tgt.p),
+      e: tgt && f3(tgt.e),
+    },
+  };
 }
 
 export interface SubspaceInfo {
@@ -240,5 +511,49 @@ export interface SubspaceInfo {
 }
 
 export function subspaceInfo(model: BigPictureModel, id: SubspaceId): SubspaceInfo {
-  return notImplemented('subspaceInfo');
+  const { m, n, rank: r, spaces } = model;
+  const table: Record<SubspaceId, Omit<SubspaceInfo, 'id' | 'basisTex'> & { basis: Vector[] }> = {
+    row: {
+      title: 'Row space C(Aᵀ)',
+      ambient: realSpace(n),
+      dim: r,
+      dimLabel: `dim r = ${r}`,
+      description: 'All combinations of the rows of A. Row operations never change it.',
+      membership: 'x is in C(Aᵀ) when x = Aᵀy for some y.',
+      basis: spaces.row,
+      complement: 'null',
+    },
+    null: {
+      title: 'Nullspace N(A)',
+      ambient: realSpace(n),
+      dim: n - r,
+      dimLabel: `dim n − r = ${n - r}`,
+      description: 'All solutions of Ax = 0: vectors orthogonal to every row of A.',
+      membership: 'x is in N(A) when Ax = 0.',
+      basis: spaces.nullSpace,
+      complement: 'row',
+    },
+    column: {
+      title: 'Column space C(A)',
+      ambient: realSpace(m),
+      dim: r,
+      dimLabel: `dim r = ${r}`,
+      description: 'All combinations of the columns of A: every possible Ax.',
+      membership: 'b is in C(A) when Ax = b has a solution.',
+      basis: spaces.column,
+      complement: 'leftNull',
+    },
+    leftNull: {
+      title: 'Left nullspace N(Aᵀ)',
+      ambient: realSpace(m),
+      dim: m - r,
+      dimLabel: `dim m − r = ${m - r}`,
+      description: 'All solutions of Aᵀy = 0: vectors orthogonal to every column of A.',
+      membership: 'y is in N(Aᵀ) when Aᵀy = 0. Then y · b = 0 for every b in C(A).',
+      basis: spaces.leftNull,
+      complement: 'column',
+    },
+  };
+  const { basis, ...rest } = table[id];
+  return { id, ...rest, basisTex: basis.map(colTex) };
 }

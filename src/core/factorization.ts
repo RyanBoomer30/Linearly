@@ -1,6 +1,6 @@
-import { notImplemented } from './notImplemented';
-import type { Rational } from './rational';
 import type { Matrix } from './matrix';
+import type { Rational } from './rational';
+import { rref } from './rref';
 
 export interface CRFactorization {
   /** Pivot columns of A (m × r). */
@@ -13,7 +13,12 @@ export interface CRFactorization {
 
 /** F-M7 */
 export function crFactorization(A: Matrix): CRFactorization {
-  return notImplemented('crFactorization');
+  const { matrix, pivotCols } = rref(A);
+  return {
+    C: A.map((row) => pivotCols.map((j) => row[j])),
+    R: matrix.slice(0, pivotCols.length).map((r) => [...r]),
+    pivotCols,
+  };
 }
 
 /**
@@ -21,5 +26,5 @@ export function crFactorization(A: Matrix): CRFactorization {
  * column j of A = Σ R[i][j] · C[:, i] (L1-P4).
  */
 export function columnRecipe(cr: CRFactorization, j: number): Rational[] {
-  return notImplemented('columnRecipe');
+  return cr.R.map((row) => row[j]);
 }

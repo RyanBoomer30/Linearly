@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Caption } from '../../../components/display/Caption';
-import { MatrixTex } from '../../../components/display/MatrixTex';
-import { PendingNotice } from '../../../components/display/PendingNotice';
+import { MatrixTex, matrixToTex } from '../../../components/display/MatrixTex';
+import { ViewNotice } from '../../../components/display/ViewNotice';
 import { Tex } from '../../../components/display/Tex';
 import { VectorEditor } from '../../../components/editor/VectorEditor';
 import { ModuleLayout } from '../../../components/layout/ModuleLayout';
@@ -41,11 +41,23 @@ export function ProductsView() {
             <MatrixTex entries={products.value.outer.map((r) => r.map((x) => x.toTex()))} />
             <Tex tex={products.value.outerShapeTex} />
             <p>rank(uvᵀ) = {products.value.outerRank}</p>
-            {/* TODO: show outerCR — uvᵀ = C·R with C = u, R = vᵀ, as the rank-1 case of CR */}
-            {/* TODO: column/row multiples (L1-P2) */}
+            <p>
+              Every column is a multiple of u: column j = v<sub>j</sub>·u with v<sub>j</sub> ={' '}
+              {products.value.columnMultiples.map(String).join(', ')}. Every row is a multiple of vᵀ: row i = u<sub>i</sub>·vᵀ
+              with u<sub>i</sub> = {products.value.rowMultiples.map(String).join(', ')}.
+            </p>
+            <p>The rank-1 case of CR: C = u spans C(uvᵀ), R = vᵀ spans the row space.</p>
+            <Tex
+              tex={`${matrixToTex(products.value.outer.map((r) => r.map((x) => x.toTex())), false, {})} = ${matrixToTex(
+                products.value.outerCR.C.map((r) => r.map((x) => x.toTex())),
+                false,
+                {},
+              )}${matrixToTex(products.value.outerCR.R.map((r) => r.map((x) => x.toTex())), false, {})}`}
+              display
+            />
           </>
         ) : (
-          <PendingNotice error={products.error} />
+          <ViewNotice error={products.error} />
         )}
       </section>
       <section>
@@ -58,7 +70,7 @@ export function ProductsView() {
             <Tex tex={cr.value.rankArgumentTex} display />
           </>
         ) : (
-          <PendingNotice error={cr.error} />
+          <ViewNotice error={cr.error} />
         )}
       </section>
     </ModuleLayout>

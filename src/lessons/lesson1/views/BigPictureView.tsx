@@ -1,10 +1,13 @@
 import { useState, type ReactNode } from 'react';
+import type { Vec3 } from '../../../components/canvas/types';
+
+const realSpace = (k: number) => `ℝ${String(k).replace(/\d/g, (d) => '⁰¹²³⁴⁵⁶⁷⁸⁹'[Number(d)])}`;
 import { Canvas2D } from '../../../components/canvas/Canvas2D';
 import { Canvas3D } from '../../../components/canvas/Canvas3D';
 import { BigPictureDiagram } from '../../../components/diagram/BigPictureDiagram';
 import type { BigPictureMode, SubspaceId } from '../../../components/diagram/types';
 import { Caption } from '../../../components/display/Caption';
-import { PendingNotice } from '../../../components/display/PendingNotice';
+import { ViewNotice } from '../../../components/display/ViewNotice';
 import { VectorEditor } from '../../../components/editor/VectorEditor';
 import { ModuleLayout } from '../../../components/layout/ModuleLayout';
 import { vector } from '../../../core/matrix';
@@ -12,6 +15,14 @@ import { useStore } from '../../../store/useStore';
 import { bigPictureModel, subspaceInfo } from '../models';
 import { useViewModel } from '../useLessonSystem';
 import { Controls } from './Controls';
+import { Tex } from '../../../components/display/Tex';
+
+const COMPLEMENT_NAMES: Record<SubspaceId, string> = {
+  row: 'the row space C(Aᵀ)',
+  null: 'the nullspace N(A)',
+  column: 'the column space C(A)',
+  leftNull: 'the left nullspace N(Aᵀ)',
+};
 import { AmbientSpaceContents } from './SceneContents';
 
 const MODES: { id: BigPictureMode; label: string; hint: string }[] = [
@@ -21,10 +32,10 @@ const MODES: { id: BigPictureMode; label: string; hint: string }[] = [
 ];
 
 /** ℝ² and ℝ³ get a canvas; ℝ¹ and ℝ⁴ are diagram-only. */
-function AmbientCanvas({ dim, children }: { dim: number; children: ReactNode }) {
-  if (dim === 2) return <Canvas2D>{children}</Canvas2D>;
-  if (dim === 3) return <Canvas3D>{children}</Canvas3D>;
-  return <p className="caption">ℝ{dim} can't be drawn, but the diagram above still holds.</p>;
+function AmbientCanvas({ dim, fit, children }: { dim: number; fit?: Vec3[]; children: ReactNode }) {
+  if (dim === 2) return <Canvas2D fit={fit}>{children}</Canvas2D>;
+  if (dim === 3) return <Canvas3D fit={fit}>{children}</Canvas3D>;
+  return <p className="caption">{realSpace(dim)} can't be drawn, but the diagram above still holds.</p>;
 }
 
 /**
@@ -82,13 +93,16 @@ export function BigPictureView() {
               <strong>{info.title}</strong> ⊂ {info.ambient} · {info.dimLabel}
               <p>{info.description}</p>
               <p>{info.membership}</p>
-              {/* TODO: render info.basisTex with <Tex>; name the orthogonal complement */}
+              <div>
+                Basis: {info.basisTex.length ? info.basisTex.map((tex, i) => <Tex key={i} tex={tex} />) : '{0}'}
+              </div>
+              <p>Orthogonal complement: {COMPLEMENT_NAMES[info.complement]}.</p>
             </div>
           )}
         </Controls>
       }
     >
-      {!model.ok && <PendingNotice error={model.error} />}
+      {!model.ok && <ViewNotice error={model.error} />}
       <BigPictureDiagram
         m={m}
         n={n}
@@ -98,17 +112,38 @@ export function BigPictureView() {
         onFocus={setFocus}
         labels={model.ok ? model.value.labels : undefined}
       />
-      {/* TODO: exact checks panel — xᵣ·xₙ = 0, A xₙ = 0, A xᵣ = b, p·e = 0, Aᵀe = 0 */}
+      {model.ok && mode !== 'dimensions' && (
+        <ul className="checks" aria-label="Exact checks">
+          {mode === 'A' ? (
+            <>
+              <li>xᵣ · xₙ = {model.value.checks.xrDotXn.toString()}</li>
+              <li>A xₙ = ({model.value.checks.Axn.map(String).join(', ')})</li>
+              <li>A xᵣ = ({model.value.checks.Axr.map(String).join(', ')}) = b</li>
+            </>
+          ) : model.value.target ? (
+            <>
+              <li>p · e = {model.value.checks.pDotE?.toString()}</li>
+              <li>Aᵀe = ({model.value.checks.Ate?.map(String).join(', ')})</li>
+              <li>{model.value.target.e.every((x) => x.isZero()) ? 'e = 0, so b is in C(A).' : 'e ≠ 0, so b is not in C(A): Ax = b has no solution.'}</li>
+            </>
+          ) : (
+            <li>Turn on the b column in the editor to split b = p + e.</li>
+          )}
+        </ul>
+      )}
       <div className="side-by-side">
         <figure>
-          <figcaption>ℝ{n}: row space and nullspace</figcaption>
-          <AmbientCanvas dim={n}>
+          <figcaption>{realSpace(n)}: row space and nullspace</figcaption>
+          <AmbientCanvas dim={n} fit={model.ok ? [model.value.scene.x, model.value.scene.xr, model.value.scene.xn] : undefined}>
             {model.ok && <AmbientSpaceContents scene={model.value.scene} side="domain" mode={mode} focus={focus} />}
           </AmbientCanvas>
         </figure>
         <figure>
-          <figcaption>ℝ{m}: column space and left nullspace</figcaption>
-          <AmbientCanvas dim={m}>
+          <figcaption>{realSpace(m)}: column space and left nullspace</figcaption>
+          <AmbientCanvas
+            dim={m}
+            fit={model.ok ? [model.value.scene.b, ...(model.value.scene.t ? [model.value.scene.t] : [])] : undefined}
+          >
             {model.ok && <AmbientSpaceContents scene={model.value.scene} side="codomain" mode={mode} focus={focus} />}
           </AmbientCanvas>
         </figure>

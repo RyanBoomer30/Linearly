@@ -7,4 +7,5 @@ export { Line2D, ParametricLine } from './Line2D';
 export { Plane } from './Plane';
 export { Point } from './Point';
 export { Span } from './Span';
-export { useAutoFit } from './useAutoFit';
+export { FitBridge, useAutoFit } from './useAutoFit';
+export { RightAngleMarker } from './RightAngleMarker';

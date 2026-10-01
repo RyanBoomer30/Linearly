@@ -2,19 +2,17 @@
 export type ViewId =
   | 'row'
   | 'column'
-  | 'sideBySide'
+  | 'columnVsRow'
   | 'elimination'
-  | 'columnSpace'
   | 'products'
   | 'subspaces'
-  | 'bigPicture'
-  | 'demo';
+  | 'bigPicture';
 
 export interface Preset {
   id: string;
   name: string;
   A: string[][];
-  b?: string[];
+  b: string[];
   /** Products view inputs. */
   u?: string[];
   v?: string[];
@@ -40,8 +38,8 @@ export const PRESETS: Preset[] = [
   },
   { id: 'consistent3x3', name: '3×3 consistent system', A: A3, b: ['2', '5', '4'], view: 'row' },
   { id: 'inconsistent3x3', name: '3×3 inconsistent system', A: A3, b: ['2', '5', '5'], view: 'row' },
-  { id: 'outer', name: 'Outer product', A: A3, u: ['1', '1', '1'], v: ['1', '2', '3'], view: 'products' },
-  { id: 'cr', name: 'CR factorization', A: A3, view: 'products' },
+  { id: 'outer', name: 'Outer product', A: A3, b: ['2', '5', '4'], u: ['1', '1', '1'], v: ['1', '2', '3'], view: 'products' },
+  { id: 'cr', name: 'CR factorization', A: A3, b: ['2', '5', '4'], view: 'products' },
   {
     // Strang, "The Four Fundamental Subspaces: 4 Lines", §2: 3×4, rank 2.
     id: 'strang3x4',
@@ -69,15 +67,28 @@ export const PRESETS: Preset[] = [
 
 export const presetById = (id: string) => PRESETS.find((p) => p.id === id);
 
-/** Preset each view opens with (§6 UX notes). */
+/**
+ * Matrix sizes a view can draw. Switching views keeps the current matrix when
+ * it fits; otherwise the view loads its default preset (§6 UX notes).
+ */
+export const VIEW_REQUIREMENTS: Partial<Record<ViewId, { fits: (m: number, n: number) => boolean; needs: string }>> = {
+  row: { fits: (_m, n) => n === 2 || n === 3, needs: 'The row picture needs 2 or 3 unknowns (columns)' },
+  column: { fits: (m) => m === 2 || m === 3, needs: 'The column picture needs 2 or 3 equations (rows)' },
+  columnVsRow: {
+    fits: (m, n) => (m === 2 || m === 3) && (n === 2 || n === 3),
+    needs: 'Column vs row needs 2 or 3 rows and 2 or 3 columns',
+  },
+};
+
+export const fitsView = (view: ViewId, m: number, n: number) => VIEW_REQUIREMENTS[view]?.fits(m, n) ?? true;
+
+/** Preset a view falls back to when the current matrix does not fit it. */
 export const DEFAULT_PRESET_FOR_VIEW: Record<ViewId, string> = {
   row: 'system2x2',
   column: 'system2x2',
-  sideBySide: 'consistent3x3',
+  columnVsRow: 'consistent3x3',
   elimination: 'consistent3x3',
-  columnSpace: 'consistent3x3',
   products: 'cr',
   subspaces: 'consistent3x3',
   bigPicture: 'consistent3x3',
-  demo: 'consistent3x3',
 };

@@ -82,7 +82,29 @@ export function MatrixEditor({ showB = true, invalid = [], onColumnClick }: Matr
 }
 
 /**
- * F-E5: arrow keys / Enter move between cells (Tab works natively).
- * TODO: implement focus movement using data-row / data-col.
+ * F-E5: arrow keys / Enter move between cells (Tab works natively). Left and
+ * right only leave a cell when the caret is already at its edge.
  */
-function onCellKeyDown(e: KeyboardEvent<HTMLInputElement>) {}
+function onCellKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+  const input = e.currentTarget;
+  const row = Number(input.dataset.row);
+  const col = Number(input.dataset.col);
+  const atStart = input.selectionStart === 0 && input.selectionEnd === 0;
+  const atEnd = input.selectionStart === input.value.length;
+  const moves: Record<string, [number, number] | undefined> = {
+    ArrowUp: [-1, 0],
+    ArrowDown: [1, 0],
+    Enter: e.shiftKey ? [-1, 0] : [1, 0],
+    ArrowLeft: atStart ? [0, -1] : undefined,
+    ArrowRight: atEnd ? [0, 1] : undefined,
+  };
+  const move = moves[e.key];
+  if (!move) return;
+  const target = input
+    .closest('table')
+    ?.querySelector<HTMLInputElement>(`input[data-row="${row + move[0]}"][data-col="${col + move[1]}"]`);
+  if (!target) return;
+  e.preventDefault();
+  target.focus();
+  target.select();
+}

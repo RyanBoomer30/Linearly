@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export interface StepperState {
   index: number;
@@ -16,15 +16,30 @@ export interface StepperState {
 
 /**
  * F-S1 / F-S4: current-step state for any Trace. Canvases and the matrix
- * display read `index` to redraw.
- * TODO: playback timer (advance at `speed`, stop at the last step), and
- * reset to 0 when the trace changes.
+ * display read `index` to redraw. `resetKey` (e.g. the input matrix) sends
+ * the stepper back to the first step when the trace changes.
  */
-export function useStepper(count: number): StepperState {
+export function useStepper(count: number, resetKey?: unknown): StepperState {
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const clamp = (k: number) => Math.max(0, Math.min(count - 1, k));
+
+  useEffect(() => {
+    setIndex(0);
+    setPlaying(false);
+  }, [count, resetKey]);
+
+  useEffect(() => {
+    if (!playing) return;
+    if (index >= count - 1) {
+      setPlaying(false);
+      return;
+    }
+    const id = window.setTimeout(() => setIndex((k) => clamp(k + 1)), 1000 / speed);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing, index, count, speed]);
 
   return {
     index: clamp(index),
@@ -35,7 +50,11 @@ export function useStepper(count: number): StepperState {
     prev: () => setIndex((k) => clamp(k - 1)),
     next: () => setIndex((k) => clamp(k + 1)),
     last: () => setIndex(count - 1),
-    togglePlay: () => setPlaying((p) => !p),
+    togglePlay: () => {
+      // Play from the start when already at the end.
+      if (!playing && index >= count - 1) setIndex(0);
+      setPlaying((p) => !p);
+    },
     setSpeed,
   };
 }

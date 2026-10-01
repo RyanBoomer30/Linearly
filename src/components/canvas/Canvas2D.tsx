@@ -1,9 +1,12 @@
 import { OrbitControls } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
-import type { ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { useSceneColors } from '../../theme/useTheme';
+import { LabelLayerContext } from './LabelLayer';
 import { Axes } from './primitives/Axes';
+import type { Vec3 } from './types';
 import { GridLines } from './primitives/GridLines';
+import { FitBridge } from './primitives/useAutoFit';
 
 interface Canvas2DProps {
   children?: ReactNode;
@@ -11,11 +14,15 @@ interface Canvas2DProps {
   extent?: number;
   /** Pixels per world unit. */
   zoom?: number;
+  /** Points to frame on load and on Auto-fit (F-C6). */
+  fit?: Vec3[];
 }
 
 /** F-C1: orthographic camera, labeled axes, grid, pan and zoom (no rotation). */
-export function Canvas2D({ children, extent = 8, zoom = 40 }: Canvas2DProps) {
+export function Canvas2D({ children, extent = 8, zoom = 40, fit }: Canvas2DProps) {
   const colors = useSceneColors();
+  const labels = useRef<HTMLDivElement>(null);
+  const fitRef = useRef<(() => void) | null>(null);
   return (
     <div className="canvas-frame">
       <Canvas orthographic camera={{ position: [0, 0, 100], zoom, near: 0.1, far: 1000 }}>
@@ -23,9 +30,20 @@ export function Canvas2D({ children, extent = 8, zoom = 40 }: Canvas2DProps) {
         <ambientLight intensity={1} />
         <OrbitControls makeDefault enableRotate={false} screenSpacePanning />
         <GridLines extent={extent} color={colors.grid} />
-        <Axes extent={extent} dims={2} color={colors.axis} labelColor={colors.text} />
-        {children}
+        <LabelLayerContext.Provider value={labels}>
+          <Axes extent={extent} dims={2} color={colors.axis} labelColor={colors.text} />
+          {children}
+        </LabelLayerContext.Provider>
+        {fit && fit.length > 0 && <FitBridge points={fit} fitRef={fitRef} />}
       </Canvas>
+      <div ref={labels} className="label-layer" />
+      <div className="canvas-buttons">
+        {fit && fit.length > 0 && (
+          <button type="button" onClick={() => fitRef.current?.()}>
+            Auto-fit
+          </button>
+        )}
+      </div>
     </div>
   );
 }

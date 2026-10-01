@@ -1,5 +1,8 @@
-import { notImplemented } from './notImplemented';
-import type { Matrix, Vector } from './matrix';
+import { getColumn, shape, transpose, type Matrix, type Vector } from './matrix';
+import { decomposeColumnLeftNull } from './projection';
+import { normFloat } from './products';
+import { rref, rrefAugmented } from './rref';
+import { specialSolutions } from './solve';
 
 /** F-M6. Bases follow the notes' conventions:
  *  - C(A): pivot columns of A
@@ -8,19 +11,21 @@ import type { Matrix, Vector } from './matrix';
  *  - N(Aᵀ): special solutions of Aᵀy = 0
  */
 export function columnSpaceBasis(A: Matrix): Vector[] {
-  return notImplemented('columnSpaceBasis');
+  return rref(A).pivotCols.map((j) => getColumn(A, j));
 }
 
 export function rowSpaceBasis(A: Matrix): Vector[] {
-  return notImplemented('rowSpaceBasis');
+  const { matrix, pivotCols } = rref(A);
+  return matrix.slice(0, pivotCols.length).map((r) => [...r]);
 }
 
 export function nullSpaceBasis(A: Matrix): Vector[] {
-  return notImplemented('nullSpaceBasis');
+  const { matrix, pivotCols } = rref(A);
+  return specialSolutions(matrix, pivotCols, shape(A).cols).basis;
 }
 
 export function leftNullSpaceBasis(A: Matrix): Vector[] {
-  return notImplemented('leftNullSpaceBasis');
+  return nullSpaceBasis(transpose(A));
 }
 
 export interface FourSubspaces {
@@ -34,15 +39,25 @@ export interface FourSubspaces {
 }
 
 export function fourSubspaces(A: Matrix): FourSubspaces {
-  return notImplemented('fourSubspaces');
+  const { rows: m, cols: n } = shape(A);
+  const row = rowSpaceBasis(A);
+  return {
+    m,
+    n,
+    rank: row.length,
+    column: columnSpaceBasis(A),
+    row,
+    nullSpace: nullSpaceBasis(A),
+    leftNull: leftNullSpaceBasis(A),
+  };
 }
 
 /** b ∈ C(A) ⇔ Ax = b is consistent. */
 export function inColumnSpace(A: Matrix, b: Vector): boolean {
-  return notImplemented('inColumnSpace');
+  return !rrefAugmented(A, b).inconsistent;
 }
 
 /** Distance from b to C(A) in floating point (L1-CS3). */
 export function distanceToColumnSpace(A: Matrix, b: Vector): number {
-  return notImplemented('distanceToColumnSpace');
+  return normFloat(decomposeColumnLeftNull(A, b).e);
 }
