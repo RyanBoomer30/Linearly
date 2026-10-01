@@ -138,3 +138,19 @@ select { background: var(--surface); border: 1px solid var(--border); border-rad
   font-size: 0.85rem;
 }
 .loading { color: var(--muted); }
+
+.big-picture { width: 100%; height: auto; max-height: 70vh; display: block; }
+.big-picture text { fill: var(--text); font-size: 15px; }
+.big-picture .bp-region { cursor: pointer; outline: none; }
+.big-picture .bp-region:focus-visible polygon { stroke-width: 4; }
+.big-picture .bp-region-name { font-weight: 700; }
+.big-picture .bp-region-dim { font-weight: 600; }
+.big-picture .bp-region-text, .big-picture .bp-perp text { fill: var(--muted); }
+.big-picture .bp-ambient { font-size: 22px; font-style: italic; }
+.big-picture .bp-arrow-label { font-size: 15px; font-weight: 600; }
+.big-picture .bp-point-label { font-size: 14px; font-family: ui-monospace, monospace; }
+
+.segmented { display: flex; flex-wrap: wrap; gap: 4px; }
+.segmented .active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.subspace-info { border-left: 3px solid; padding: 4px 10px; }
+.subspace-info p { margin: 4px 0; }

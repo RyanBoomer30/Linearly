@@ -33,3 +33,16 @@ export function expectRealThrow(fn: () => unknown) {
   if (!error) throw new Error('expected function to throw');
   if (error instanceof Error && error.message.startsWith('Not implemented')) throw error;
 }
+
+/** Strang, "The Four Fundamental Subspaces: 4 Lines", §2 — 3×4, rank 2, already in rref. */
+export const STRANG_3x4 = [
+  [1, 0, 2, 3],
+  [0, 1, 4, 5],
+  [0, 0, 0, 0],
+];
+
+/** Strang §3 — rank one A = xyᵀ with x = (1,2), y = (1,1): four lines in ℝ². */
+export const RANK1_2x2 = [
+  [1, 1],
+  [2, 2],
+];

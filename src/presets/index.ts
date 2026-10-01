@@ -7,6 +7,7 @@ export type ViewId =
   | 'columnSpace'
   | 'products'
   | 'subspaces'
+  | 'bigPicture'
   | 'demo';
 
 export interface Preset {
@@ -41,6 +42,29 @@ export const PRESETS: Preset[] = [
   { id: 'inconsistent3x3', name: '3×3 inconsistent system', A: A3, b: ['2', '5', '5'], view: 'row' },
   { id: 'outer', name: 'Outer product', A: A3, u: ['1', '1', '1'], v: ['1', '2', '3'], view: 'products' },
   { id: 'cr', name: 'CR factorization', A: A3, view: 'products' },
+  {
+    // Strang, "The Four Fundamental Subspaces: 4 Lines", §2: 3×4, rank 2.
+    id: 'strang3x4',
+    name: 'Strang 3×4, rank 2',
+    A: [
+      ['1', '0', '2', '3'],
+      ['0', '1', '4', '5'],
+      ['0', '0', '0', '0'],
+    ],
+    b: ['1', '2', '3'],
+    view: 'bigPicture',
+  },
+  {
+    // Strang §3: rank one A = xyᵀ in ℝ², all four subspaces are lines.
+    id: 'rank1_2x2',
+    name: 'Rank one 2×2 (four lines)',
+    A: [
+      ['1', '1'],
+      ['2', '2'],
+    ],
+    b: ['1', '0'],
+    view: 'bigPicture',
+  },
 ];
 
 export const presetById = (id: string) => PRESETS.find((p) => p.id === id);
@@ -54,5 +78,6 @@ export const DEFAULT_PRESET_FOR_VIEW: Record<ViewId, string> = {
   columnSpace: 'consistent3x3',
   products: 'cr',
   subspaces: 'consistent3x3',
+  bigPicture: 'consistent3x3',
   demo: 'consistent3x3',
 };

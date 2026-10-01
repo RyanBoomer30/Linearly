@@ -10,7 +10,7 @@ import {
   nullSpaceBasis,
   rowSpaceBasis,
 } from '../subspaces';
-import { A3, B_CONSISTENT, B_INCONSISTENT, OUTER, sv } from './fixtures';
+import { A3, B_CONSISTENT, B_INCONSISTENT, OUTER, RANK1_2x2, STRANG_3x4, sv } from './fixtures';
 
 describe('four subspaces (F-M6, L1-F acceptance)', () => {
   let A: ReturnType<typeof matrix>;
@@ -110,5 +110,37 @@ describe('null space as orthogonality to every row (§1.4)', () => {
     for (const r of f.row) expect(r).toHaveLength(4);
     for (const n of f.nullSpace) expect(n).toHaveLength(4);
     for (const y of f.leftNull) expect(y).toHaveLength(2);
+  });
+});
+
+describe("Strang's 3×4 example (four subspaces paper §2)", () => {
+  let f: ReturnType<typeof fourSubspaces>;
+  beforeAll(() => {
+    f = fourSubspaces(matrix(STRANG_3x4));
+  });
+
+  it('dimensions r = 2, n − r = 2, m − r = 1', () => {
+    expect([f.m, f.n, f.rank]).toEqual([3, 4, 2]);
+    expect(f.row).toHaveLength(2);
+    expect(f.nullSpace).toHaveLength(2);
+    expect(f.column).toHaveLength(2);
+    expect(f.leftNull).toHaveLength(1);
+  });
+
+  it('bases match the paper', () => {
+    expect(f.column.map(vectorToStrings)).toEqual([sv([1, 0, 0]), sv([0, 1, 0])]);
+    expect(f.leftNull.map(vectorToStrings)).toEqual([sv([0, 0, 1])]);
+    expect(f.row.map(vectorToStrings)).toEqual([sv([1, 0, 2, 3]), sv([0, 1, 4, 5])]);
+    expect(f.nullSpace.map(vectorToStrings)).toEqual([sv([-2, -4, 1, 0]), sv([-3, -5, 0, 1])]);
+  });
+});
+
+describe("Strang's rank one 2×2 (four lines in ℝ²)", () => {
+  it('C(Aᵀ) = line through (1,1), N(A) through (−1,1), C(A) through (1,2), N(Aᵀ) through (−2,1)', () => {
+    const f = fourSubspaces(matrix(RANK1_2x2));
+    expect(f.row.map(vectorToStrings)).toEqual([sv([1, 1])]);
+    expect(f.nullSpace.map(vectorToStrings)).toEqual([sv([-1, 1])]);
+    expect(f.column.map(vectorToStrings)).toEqual([sv([1, 2])]);
+    expect(f.leftNull.map(vectorToStrings)).toEqual([sv([-2, 1])]);
   });
 });

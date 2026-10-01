@@ -1,6 +1,7 @@
 import { useEffect, type ComponentType } from 'react';
 import { DEFAULT_PRESET_FOR_VIEW, type ViewId } from '../../presets';
 import { useStore } from '../../store/useStore';
+import { BigPictureView } from './views/BigPictureView';
 import { ColumnPictureView } from './views/ColumnPictureView';
 import { ColumnSpaceView } from './views/ColumnSpaceView';
 import { EliminationView } from './views/EliminationView';
@@ -18,6 +19,7 @@ const VIEWS: { id: ViewId; label: string; component: ComponentType }[] = [
   { id: 'columnSpace', label: 'Column space', component: ColumnSpaceView },
   { id: 'products', label: 'Products & CR', component: ProductsView },
   { id: 'subspaces', label: 'Four subspaces', component: SubspacesView },
+  { id: 'bigPicture', label: 'Big picture', component: BigPictureView },
   { id: 'demo', label: 'Primitives demo', component: PrimitivesDemoView },
 ];
 

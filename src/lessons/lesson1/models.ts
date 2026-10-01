@@ -10,6 +10,7 @@ import type { Rational } from '../../core/rational';
 import type { AugmentedRrefResult } from '../../core/rref';
 import type { SolutionSet } from '../../core/solve';
 import type { FourSubspaces } from '../../core/subspaces';
+import type { BigPictureLabels, SubspaceId } from '../../components/diagram/types';
 
 // §5.1 Row picture ---------------------------------------------------------
 
@@ -172,4 +173,72 @@ export interface SubspacesView {
 
 export function subspacesView(A: Matrix): SubspacesView {
   return notImplemented('subspacesView');
+}
+
+// Big picture (Strang) ------------------------------------------------------
+
+export interface BigPictureModel {
+  m: number;
+  n: number;
+  rank: number;
+  spaces: FourSubspaces;
+  /** Left side: x = x_r + x_n, x_r ∈ C(Aᵀ), x_n ∈ N(A). */
+  x: Vector;
+  xr: Vector;
+  xn: Vector;
+  /** b = Ax = A x_r, and A x_n = 0. */
+  b: Vector;
+  /** Right side for a target that may miss C(A): t = p + e, Aᵀt = Aᵀp, Aᵀe = 0. */
+  target: { t: Vector; p: Vector; e: Vector; Att: Vector } | null;
+  /** Exact checks shown next to the diagram. */
+  checks: {
+    xrDotXn: Rational;
+    Axn: Vector;
+    Axr: Vector;
+    pDotE: Rational | null;
+    Ate: Vector | null;
+  };
+  /** Display strings for the diagram, e.g. { xr: 'xᵣ = (1, 0, 1)' }. */
+  labels: BigPictureLabels;
+  /** Floats for the companion canvases. */
+  scene: {
+    rowSpan: Vec3[];
+    nullSpan: Vec3[];
+    columnSpan: Vec3[];
+    leftNullSpan: Vec3[];
+    x: Vec3;
+    xr: Vec3;
+    xn: Vec3;
+    b: Vec3;
+    t: Vec3 | null;
+    p: Vec3 | null;
+    e: Vec3 | null;
+  };
+}
+
+/** Everything the Big picture view draws for A, a chosen x, and an optional target b. */
+export function bigPictureModel(A: Matrix, x: Vector, target: Vector | null): BigPictureModel {
+  return notImplemented('bigPictureModel');
+}
+
+export interface SubspaceInfo {
+  id: SubspaceId;
+  /** "Row space C(Aᵀ)" */
+  title: string;
+  /** "ℝ³" */
+  ambient: string;
+  dim: number;
+  /** "dim r = 2" */
+  dimLabel: string;
+  /** One sentence in the notes' language, e.g. "All combinations of the rows of A." */
+  description: string;
+  /** How it is tested, e.g. "x is in N(A) when Ax = 0". */
+  membership: string;
+  basisTex: string[];
+  /** The subspace it is orthogonal to. */
+  complement: SubspaceId;
+}
+
+export function subspaceInfo(model: BigPictureModel, id: SubspaceId): SubspaceInfo {
+  return notImplemented('subspaceInfo');
 }

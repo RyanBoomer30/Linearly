@@ -7,3 +7,4 @@ export * from './solve';
 export * from './products';
 export * from './subspaces';
 export * from './factorization';
+export * from './projection';
