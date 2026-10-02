@@ -1,5 +1,4 @@
 import { useLayoutEffect, useState, type ReactNode, type RefObject } from 'react';
-import { notImplemented } from '../../core/notImplemented';
 import { attempt } from '../../store/useSystem';
 
 /** A cell of a rendered KaTeX matrix (MatrixTex), by 0-based row and column. */
@@ -11,7 +10,11 @@ export interface CellRef {
 
 /** Find the on-screen box of entry (row, col) inside a rendered MatrixTex. Null when it isn't there. */
 export function locateCell(container: HTMLElement, row: number, col: number): DOMRect | null {
-  return notImplemented('locateCell');
+  // KaTeX lays an array out column by column: .mtable > .col-align-* > … > .vlist > one span per row.
+  const column = container.querySelectorAll('.mtable > [class*="col-align"]')[col];
+  const cell = column?.querySelector('.vlist')?.children[row];
+  const content = cell?.querySelector('.mord') ?? cell;
+  return content ? content.getBoundingClientRect() : null;
 }
 
 /**

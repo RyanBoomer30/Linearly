@@ -22,7 +22,7 @@ export function SolveView() {
   const openInLesson1 = useLesson3Store((s) => s.openInLesson1);
   const [k, setK] = useState(0);
   const which = Math.min(k, rhsCount - 1);
-  const view = useLesson3((s) => ({ ...solveView(s.A, s.rhs[which], pivoting), A: s.A }), [pivoting, which]);
+  const view = useLesson3((s) => ({ ...solveView(s.A, s.rhs[which], pivoting), A: s.A, b: s.rhs[which] }), [pivoting, which]);
 
   return (
     <ModuleLayout
@@ -65,7 +65,7 @@ export function SolveView() {
               <button
                 type="button"
                 className="link-button"
-                onClick={() => attempt(() => openInLesson1(view.value.A, view.value.Pb, 'column'))}
+                onClick={() => attempt(() => openInLesson1(view.value.A, view.value.b, 'column'))}
               >
                 See this A, b and x in the Lesson 1 column picture
               </button>

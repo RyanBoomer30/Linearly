@@ -1,4 +1,3 @@
-import { notImplemented } from '../../core/notImplemented';
 import { attempt } from '../../store/useSystem';
 
 /**
@@ -6,7 +5,11 @@ import { attempt } from '../../store/useSystem';
  * negative → blue, 0 → neutral, positive → orange (color-blind safe).
  */
 export function divergingColor(value: number, maxAbs: number): string {
-  return notImplemented('divergingColor');
+  if (value === 0 || !(maxAbs > 0)) return 'transparent';
+  const t = Math.min(1, Math.abs(value) / maxAbs);
+  // Translucent fills read on both themes; zero shows the surface.
+  const alpha = (0.15 + 0.7 * t).toFixed(3);
+  return value < 0 ? `rgba(0, 114, 178, ${alpha})` : `rgba(213, 94, 0, ${alpha})`;
 }
 
 interface MatrixHeatmapProps {

@@ -6,7 +6,6 @@ import { ViewNotice } from '../../../components/display/ViewNotice';
 import { ModuleLayout } from '../../../components/layout/ModuleLayout';
 import { StepperControls } from '../../../components/stepper/StepperControls';
 import { useStepper } from '../../../components/stepper/useStepper';
-import { vector } from '../../../core/matrix';
 import type { ProductMode } from '../../../core/productTrace';
 import { useLesson3Store } from '../../../store/useLesson3Store';
 import { attempt } from '../../../store/useSystem';
@@ -45,6 +44,8 @@ export function TwoWaysView() {
 
   const rowBg = (n: number, on: number | null) => Array.from({ length: n }, (_, i) => (i === on ? HIGHLIGHT : undefined));
   const B = view.ok ? view.value.B : [];
+  // Lesson 1 takes A and b: with x = C, b is the product Bx, whose solution is x.
+  const bOf = () => (view.ok ? view.value.result.map((r) => r[0]) : []);
   const C = view.ok ? view.value.C : [];
 
   return (
@@ -111,13 +112,13 @@ export function TwoWaysView() {
               <p>C has one column, so BC is Ax with A = B and x = C.</p>
               <p>
                 {view.value.vectorCase.rowPicture}{' '}
-                <button type="button" className="link-button" onClick={() => attempt(() => openInLesson1(B, vector(C.map((r) => r[0])), 'row'))}>
+                <button type="button" className="link-button" onClick={() => attempt(() => openInLesson1(B, bOf(), 'row'))}>
                   Open the row picture
                 </button>
               </p>
               <p>
                 {view.value.vectorCase.columnPicture}{' '}
-                <button type="button" className="link-button" onClick={() => attempt(() => openInLesson1(B, vector(C.map((r) => r[0])), 'column'))}>
+                <button type="button" className="link-button" onClick={() => attempt(() => openInLesson1(B, bOf(), 'column'))}>
                   Open the column picture
                 </button>
               </p>

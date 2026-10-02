@@ -102,7 +102,7 @@ function modelForFeatures(model: ModelChoice, featureCount: number): ModelChoice
 }
 
 /** Exact editor text for Lesson 1: a decimal when it is exact (2.25), otherwise a fraction (400/133). */
-function editorText(r: Rational): string {
+export function editorText(r: Rational): string {
   const decimal = String(r.toNumber());
   const back = Rational.parse(decimal);
   return back && back.equals(r) ? decimal : r.toString();
