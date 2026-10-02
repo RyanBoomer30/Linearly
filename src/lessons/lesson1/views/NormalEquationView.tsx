@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Caption } from '../../../components/display/Caption';
+import { MathText } from '../../../components/display/MathText';
 import { MatrixTex } from '../../../components/display/MatrixTex';
 import { Tex } from '../../../components/display/Tex';
 import { ViewNotice } from '../../../components/display/ViewNotice';
@@ -31,14 +32,18 @@ export function NormalEquationView() {
       controls={
         <Controls>
           <Caption section="Lesson 2, §2.2–2.3">
-            The best x̂ makes e = b − Ax̂ perpendicular to C(A). That one condition is the normal equation AᵀAx̂ = Aᵀb.
+            <MathText>
+              {'The best $\\hat x$ makes $e = b - A\\hat x$ perpendicular to $C(A)$. That one condition is the normal equation $A^TA\\hat x = A^Tb$.'}
+            </MathText>
           </Caption>
           {view.ok && (
             <ol className="derivation">
               {view.value.derivation.slice(0, derivation.index + 1).map((d, k) => (
                 <li key={k} className={k === derivation.index ? 'current' : undefined}>
                   <Tex tex={d.tex} display />
-                  <span className="caption">{d.reason}</span>
+                  <span className="caption">
+                    <MathText>{d.reason}</MathText>
+                  </span>
                 </li>
               ))}
             </ol>
@@ -100,7 +105,11 @@ export function NormalEquationView() {
                 display
               />
             )}
-            {view.value.roundingNote && <p className="caption">{view.value.roundingNote}</p>}
+            {view.value.roundingNote && (
+              <p className="caption">
+                <MathText>{view.value.roundingNote}</MathText>
+              </p>
+            )}
           </section>
 
           <section>
@@ -108,7 +117,7 @@ export function NormalEquationView() {
             <Tex tex={view.value.invertibility.theoremTex} display />
             <p>
               rank(A) = {view.value.invertibility.rank} of {view.value.invertibility.columns} columns.{' '}
-              {view.value.invertibility.explanation}
+              <MathText>{view.value.invertibility.explanation}</MathText>
             </p>
             {view.value.invertibility.dependencies.length > 0 && (
               <ul className="checks">

@@ -1,4 +1,5 @@
 import { Caption } from '../../../components/display/Caption';
+import { MathText } from '../../../components/display/MathText';
 import { anyVectorEntries } from '../../../components/display/AnyMatrixTex';
 import { PrecisionBadge } from '../../../components/display/PrecisionBadge';
 import { Tex } from '../../../components/display/Tex';
@@ -19,7 +20,11 @@ export function CheckList({ checks }: { checks: Check[] }) {
         <li key={c.name} className={c.holds ? 'hit' : 'solution-msg warn'}>
           {c.holds ? '✓' : '✗'} <Tex tex={c.tex} />
           {c.residual !== undefined && <span className="caption"> (difference {c.residual.toExponential(1)})</span>}
-          {c.reason && <div className="caption">{c.reason}</div>}
+          {c.reason && (
+            <div className="caption">
+              <MathText>{c.reason}</MathText>
+            </div>
+          )}
         </li>
       ))}
     </ul>

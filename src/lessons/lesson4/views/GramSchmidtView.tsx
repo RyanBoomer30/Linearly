@@ -2,6 +2,7 @@ import { Canvas3D } from '../../../components/canvas/Canvas3D';
 import { Arrow, Label } from '../../../components/canvas/primitives';
 import { AnyMatrixTex } from '../../../components/display/AnyMatrixTex';
 import { Caption } from '../../../components/display/Caption';
+import { MathText } from '../../../components/display/MathText';
 import { PrecisionBadge } from '../../../components/display/PrecisionBadge';
 import { Tex } from '../../../components/display/Tex';
 import { ViewNotice } from '../../../components/display/ViewNotice';
@@ -42,7 +43,11 @@ export function GramSchmidtView() {
               </button>
             ))}
           </div>
-          {view.ok && <p className="caption">{view.value.variantDifference}</p>}
+          {view.ok && (
+            <p className="caption">
+              <MathText>{view.value.variantDifference}</MathText>
+            </p>
+          )}
         </Controls>
       }
     >
@@ -59,7 +64,9 @@ export function GramSchmidtView() {
             <Tex tex="R =" />
             <AnyMatrixTex M={view.value.result.R} />
           </div>
-          <p className={view.value.agreement.agree ? 'hit' : 'caption'}>{view.value.agreement.note}</p>
+          <p className={view.value.agreement.agree ? 'hit' : 'caption'}>
+            <MathText>{view.value.agreement.note}</MathText>
+          </p>
           {view.value.scene && (
             <Canvas3D fit={[...view.value.scene.columns, ...view.value.scene.q]}>
               {view.value.scene.columns.map((c, j) => (

@@ -861,7 +861,7 @@ export function normalEquationView(A: Matrix, b: Vector | null): NormalEquationV
   const labels = Array.from({ length: n }, (_, j) => `a${subDigits(j + 1)}`);
   return {
     derivation: [
-      { tex: 'e = b - A\\hat{x} \\perp C(A)', reason: 'The closest point p = Ax̂ leaves an error e perpendicular to every column of A.', highlight: 'e' },
+      { tex: 'e = b - A\\hat{x} \\perp C(A)', reason: 'The closest point $p = A\\hat x$ leaves an error $e$ perpendicular to every column of $A$.', highlight: 'e' },
       { tex: 'A^T(b - A\\hat{x}) = 0', reason: 'Every column of A dotted with e is 0, so e is in N(Aᵀ).', highlight: 'orthogonal' },
       { tex: 'A^TA\\hat{x} = A^Tb', reason: 'Distribute Aᵀ and move Aᵀb to the right: the normal equation.', highlight: 'normal' },
     ],
@@ -875,7 +875,7 @@ export function normalEquationView(A: Matrix, b: Vector | null): NormalEquationV
       independent: diagnosis.independent,
       theoremTex: 'A^TA \\text{ is invertible} \\iff A \\text{ has independent columns}',
       explanation: diagnosis.independent
-        ? 'The columns are independent, so AᵀA is invertible and x̂ is unique.'
+        ? 'The columns are independent, so $A^TA$ is invertible and $\\hat x$ is unique.'
         : 'The columns are dependent, so AᵀA is singular: every x with Ax = p is a best solution.',
       dependencies: diagnosis.dependencies.map((d) => describeDependency(d, labels)),
     },
@@ -899,7 +899,7 @@ export function normalEquationView(A: Matrix, b: Vector | null): NormalEquationV
         ],
       },
     ],
-    roundingNote: notesRoundingNote(A, target, 'x̂'),
+    roundingNote: notesRoundingNote(A, target, '$\\hat x$'),
   };
 }
 

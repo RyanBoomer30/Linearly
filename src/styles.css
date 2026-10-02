@@ -295,3 +295,4 @@ select { background: var(--surface); border: 1px solid var(--border); border-rad
 .precision-reason { font-weight: 400; }
 .comparison-table caption { caption-side: bottom; text-align: left; color: var(--muted); padding-top: 4px; }
 .svd-panel { border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; background: var(--surface); }
+.module-controls .precision-badge { align-self: flex-start; }

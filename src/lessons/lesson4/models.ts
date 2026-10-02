@@ -6,7 +6,7 @@
  */
 import type { ChartFrame } from '../../components/canvas/charts';
 import { toVec3, type Vec3 } from '../../components/canvas/types';
-import { anyMatrixEntries, anyVectorEntries, formatFloat } from '../../components/display/AnyMatrixTex';
+import { anyMatrixTex, anyVectorEntries, formatFloat } from '../../components/display/AnyMatrixTex';
 import { matrixToTex } from '../../components/display/MatrixTex';
 import { exactLeastSquaresFromFloats, relativeError } from '../../core/accuracy';
 import { norm } from '../../core/exactNorm';
@@ -41,7 +41,7 @@ import { LOG_DELTA_RANGE, nearCollinearHouses } from '../../presets/lesson4';
 
 // Helpers -------------------------------------------------------------------------
 
-const texOf = (M: AnyMatrix) => matrixToTex(anyMatrixEntries(M, 6), false, {});
+const texOf = (M: AnyMatrix) => anyMatrixTex(M, 6);
 const tupleOf = (v: AnyVector) => `(${anyVectorEntries(v, 6).join(', ')})`;
 const sameExact = (a: Vector, b: Vector) => a.length === b.length && a.every((x, i) => x.equals(b[i]));
 
@@ -149,6 +149,15 @@ export function reflectorView(x: Vector, w: Vector, y: Vector): ReflectorView {
   if (typeof r === 'string') return { scene: null, reflector: null, formula: [], identities: [], lengthMismatch: r, notesCorrection: null };
   const vv = r.precision.kind === 'exact' ? dot(r.v as Vector, r.v as Vector).toTex() : formatFloat(fDot(r.v as number[], r.v as number[]));
   const scene = sceneOf(r, y);
+  // Px exactly when the reflector is exact: v = 2Px with (x·v / v·v)v.
+  const Px: AnyVector =
+    r.precision.kind === 'exact'
+      ? (() => {
+          const v = r.v as Vector;
+          const vv = dot(v, v);
+          return vv.isZero() ? v : v.map((vi) => dot(x, v).div(vv).mul(vi));
+        })()
+      : scene.Px.slice(0, dim);
   return {
     scene,
     reflector: r,
@@ -158,11 +167,11 @@ export function reflectorView(x: Vector, w: Vector, y: Vector): ReflectorView {
       { label: 'P = vvᵀ/‖v‖²', tex: `P = \\hat v\\hat v^T = \\frac{vv^T}{\\|v\\|^2} = ${texOf(r.P)}` },
       { label: 'H = I − 2P', tex: `H = I - 2P = ${texOf(r.H)}` },
     ],
-    identities: [`v = 2Px = 2\\cdot${tupleOf(scene.Px.slice(0, dim))}`, `Hx = x - 2Px = ${tupleOf(scene.Hx.slice(0, dim))} = w`],
+    identities: [`v = 2Px = 2\\cdot${tupleOf(Px)}`, `Hx = x - 2Px = ${tupleOf(r.precision.kind === 'exact' ? matVec(r.H as Matrix, x) : scene.Hx.slice(0, dim))} = w`],
     lengthMismatch: null,
     notesCorrection:
       sameExact(x, NOTES_X) && sameExact(w, NOTES_W)
-        ? "The notes' §4.1 example ends with (1/6)[[1,−2,−1],[−2,4,2],[−1,2,1]], but that matrix is P = vvᵀ/‖v‖², not H. H = I − 2P = (1/3)[[2,2,1],[2,−1,−2],[1,−2,2]], the same Ĥ₂ the notes use in §4.3."
+        ? "The notes' §4.1 example ends with $\\frac{1}{6}\\begin{bmatrix} 1 & -2 & -1 \\\\ -2 & 4 & 2 \\\\ -1 & 2 & 1 \\end{bmatrix}$, but that matrix is $P = \\frac{vv^T}{\\|v\\|^2}$, not $H$. In fact $H = I - 2P = \\frac{1}{3}\\begin{bmatrix} 2 & 2 & 1 \\\\ 2 & -1 & -2 \\\\ 1 & -2 & 2 \\end{bmatrix}$, the same $\\hat H_2$ the notes use in §4.3."
         : null,
   };
 }
@@ -184,7 +193,7 @@ export function lockToLength(point: number[], length: number): number[] {
 export interface PropertiesView {
   precision: Precision;
   /**
-   * L4-HP1: Hᵀ = H, H² = I, HᵀH = I, each with the notes' reason: I and
+   * L4-HP1: Hᵀ = H, H² = I, HᵀH = I, each with the notes' reason (prose with $…$ math for MathText): I and
    * P = v̂v̂ᵀ are symmetric; the inverse of a reflection is itself;
    * H⁻¹ = H = Hᵀ, and a square Q is orthogonal exactly when QᵀQ = I.
    */
@@ -207,12 +216,12 @@ export function propertiesView(x: Vector, w: Vector, y: Vector, qrA: Matrix): Pr
   const checks: Check[] = [
     {
       ...compare('symmetric', 'H^T = H', Ht, H),
-      reason: 'H = I − 2P: I is symmetric, and P = v̂v̂ᵀ is symmetric because (v̂v̂ᵀ)ᵀ = (v̂ᵀ)ᵀv̂ᵀ = v̂v̂ᵀ.',
+      reason: '$H = I - 2P$: $I$ is symmetric, and $P = \\hat v\\hat v^T$ is symmetric because $(\\hat v\\hat v^T)^T = (\\hat v^T)^T\\hat v^T = \\hat v\\hat v^T$.',
     },
-    { ...compare('self-inverse', 'H^2 = I', mulAny(H, H), I), reason: 'H is self-inverse, H⁻¹ = H: the inverse of a reflection is itself.' },
+    { ...compare('self-inverse', 'H^2 = I', mulAny(H, H), I), reason: '$H$ is self-inverse, $H^{-1} = H$: the inverse of a reflection is itself.' },
     {
       ...compare('orthogonal', 'H^TH = I', mulAny(Ht, H), I),
-      reason: 'H⁻¹ = H = Hᵀ, so HᵀH = I. A square matrix Q is orthogonal exactly when QᵀQ = I (MATH2331).',
+      reason: '$H^{-1} = H = H^T$, so $H^TH = I$. A square matrix $Q$ is orthogonal exactly when $Q^TQ = I$ (MATH2331).',
     },
   ];
   // L4-HP2, with the x and y on screen.
@@ -333,7 +342,7 @@ export function qrView(A: Matrix, sign: HouseholderSign): QrView {
       ? `R has a zero on its diagonal in column ${result.dependentColumns.map((c) => c + 1).join(', ')}: the columns of A are dependent, so R is not invertible and Rx* = Qᵀb has no unique solution.`
       : null,
     signNote:
-      "Beyond the notes: libraries use w = −sign(x₁)‖x‖e₁. With the notes' +‖x‖, the first entry of v = x − w is x₁ − ‖x‖, a cancellation that loses digits when x already points almost along +e₁; with the − sign it is x₁ + sign(x₁)‖x‖, a sum.",
+      "Beyond the notes: libraries use $w = -\\operatorname{sign}(x_1)\\|x\\|e_1$. With the notes' $+\\|x\\|$, the first entry of $v = x - w$ is $x_1 - \\|x\\|$, a cancellation that loses digits when $x$ already points almost along $+e_1$; with the − sign it is $x_1 + \\operatorname{sign}(x_1)\\|x\\|$, a sum.",
   };
 }
 
@@ -611,9 +620,9 @@ export function gramSchmidtView(A: Matrix, variant: GsVariant): GramSchmidtView 
           }
         : null,
     variantDifference:
-      'Classical: rᵢⱼ = qᵢ · aⱼ uses the original column. Modified: rᵢⱼ = qᵢ · vⱼ uses the vector left after the earlier projections were subtracted. With exact numbers they are the same.',
+      'Classical: $r_{ij} = q_i \\cdot a_j$ uses the original column. Modified: $r_{ij} = q_i \\cdot v_j$ uses the vector left after the earlier projections were subtracted. With exact numbers they are the same.',
     agreement: agree
-      ? { agree, note: 'Gram–Schmidt and Householder give the same Q̂ and R̂ here (up to signs): the difference only shows once rounding happens.' }
-      : { agree, note: 'Gram–Schmidt and Householder give different Q̂ here, beyond signs.' },
+      ? { agree, note: 'Gram–Schmidt and Householder give the same $\\hat Q$ and $\\hat R$ here (up to signs): the difference only shows once rounding happens.' }
+      : { agree, note: 'Gram–Schmidt and Householder give different $\\hat Q$ here, beyond signs.' },
   };
 }

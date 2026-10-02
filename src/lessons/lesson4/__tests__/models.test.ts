@@ -88,9 +88,9 @@ describe('§8.2 reflector properties', () => {
 
   it('each property carries the notes\' reason (§4.2)', () => {
     const [symmetric, selfInverse, orthogonal] = view.checks.map((c) => c.reason ?? '');
-    expect(symmetric).toMatch(/v̂v̂ᵀ/);
+    expect(symmetric).toMatch(/\\hat v\\hat v\^T/);
     expect(selfInverse).toMatch(/reflection is itself/);
-    expect(orthogonal).toMatch(/QᵀQ = I/);
+    expect(orthogonal).toMatch(/Q\^TQ = I/);
   });
 
   it('reflecting twice, lengths and dot products (L4-HP2)', () => {

@@ -72,7 +72,9 @@ export function ReducedQrView() {
           </div>
           {qrForm === 'full' && <p className="caption">{view.value.dropped.reason}</p>}
           <section>
-            <h3>Columns × rows: A = Σ qₖrₖ*</h3>
+            <h3>
+              Columns × rows: <Tex tex="A = \sum_k q_k r_k^*" />
+            </h3>
             <div className="heatmap-row">
               {view.value.layers.map((l) => (
                 <div key={l.k} className={l.zero ? 'layer' : 'layer kept'}>

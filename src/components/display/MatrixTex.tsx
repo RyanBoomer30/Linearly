@@ -42,5 +42,7 @@ export function matrixToTex(entries: string[][], augmented: boolean, h: MatrixHi
         .join(' & '),
     )
     .join(' \\\\ ');
-  return `\\left[\\begin{array}{${spec}} ${body} \\end{array}\\right]`;
+  const array = `\\left[\\begin{array}{${spec}} ${body} \\end{array}\\right]`;
+  // Stacked fractions need taller rows, or neighboring rows overlap.
+  return body.includes('\\frac') ? `{\\def\\arraystretch{1.6}${array}}` : array;
 }

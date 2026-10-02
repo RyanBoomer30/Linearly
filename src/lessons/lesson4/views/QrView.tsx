@@ -1,5 +1,6 @@
 import { AnyMatrixTex, anyVectorEntries } from '../../../components/display/AnyMatrixTex';
 import { Caption } from '../../../components/display/Caption';
+import { MathText } from '../../../components/display/MathText';
 import { PrecisionBadge } from '../../../components/display/PrecisionBadge';
 import { Tex } from '../../../components/display/Tex';
 import { ViewNotice } from '../../../components/display/ViewNotice';
@@ -30,9 +31,13 @@ export function QrView() {
       controls={
         <Controls>
           <Caption section="§4.3">
-            One reflector per column: Hₖ clears column k below the diagonal. Then Hₙ ⋯ H₁A = R and Q = H₁ ⋯ Hₙ.
+            <MathText>{'One reflector per column: $H_k$ clears column $k$ below the diagonal. Then $H_n \\cdots H_1A = R$ and $Q = H_1 \\cdots H_n$.'}</MathText>
           </Caption>
-          {view.ok && <p className="caption">{view.value.signNote}</p>}
+          {view.ok && (
+            <p className="caption">
+              <MathText>{view.value.signNote}</MathText>
+            </p>
+          )}
         </Controls>
       }
     >
@@ -46,15 +51,21 @@ export function QrView() {
           <StepperControls stepper={stepper} description={step.description} tex={step.tex} />
           <div className="lu-panels">
             <figure>
-              <figcaption>Current matrix Hₖ ⋯ H₁A</figcaption>
+              <figcaption>
+                Current matrix <Tex tex={`H_{${step.k + 1}} \\cdots H_1A`} />
+              </figcaption>
               <AnyMatrixTex M={step.current} highlights={{ entryBackgrounds: Object.fromEntries(step.zeroed.map((c) => [`${c.row},${c.col}`, PIVOT_COLOR])) }} />
             </figure>
             <figure>
-              <figcaption>Reflector H{step.k + 1}</figcaption>
+              <figcaption>
+                Reflector <Tex tex={`H_{${step.k + 1}}`} />
+              </figcaption>
               <AnyMatrixTex M={step.H} />
             </figure>
             <figure>
-              <figcaption>Q so far: H₁ ⋯ H{step.k + 1}</figcaption>
+              <figcaption>
+                Q so far: <Tex tex={`H_1 \\cdots H_{${step.k + 1}}`} />
+              </figcaption>
               <AnyMatrixTex M={step.Qsofar} />
             </figure>
           </div>

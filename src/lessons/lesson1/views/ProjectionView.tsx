@@ -5,6 +5,7 @@ import { Canvas3D } from '../../../components/canvas/Canvas3D';
 import { Arrow, Label, Point, RightAngleMarker, Span } from '../../../components/canvas/primitives';
 import type { Vec3 } from '../../../components/canvas/types';
 import { Caption } from '../../../components/display/Caption';
+import { MathText } from '../../../components/display/MathText';
 import { Tex } from '../../../components/display/Tex';
 import { ViewNotice } from '../../../components/display/ViewNotice';
 import { ModuleLayout } from '../../../components/layout/ModuleLayout';
@@ -29,8 +30,9 @@ export function ProjectionView() {
       controls={
         <Controls>
           <Caption section="Lesson 2, §2.2">
-            When b is not in C(A), no x solves Ax = b. The closest Ax is the projection p = Ax̂, and the error e = b − p is
-            perpendicular to C(A).
+            <MathText>
+              {'When $b$ is not in $C(A)$, no $x$ solves $Ax = b$. The closest $Ax$ is the projection $p = A\\hat x$, and the error $e = b - p$ is perpendicular to $C(A)$.'}
+            </MathText>
           </Caption>
           {view.ok && (
             <>
@@ -54,10 +56,12 @@ export function ProjectionView() {
                 ))}
                 <div className="theta-status">
                   {view.value.scene?.atOptimum ? (
-                    <span className="hit">At x̂: ‖b − Ax‖ is as small as it can be.</span>
+                    <span className="hit">
+                      <MathText>{'At $\\hat x$: $\\|b - Ax\\|$ is as small as it can be.'}</MathText>
+                    </span>
                   ) : (
                     <button type="button" onClick={() => setX(null)}>
-                      Go to x̂
+                      Go to <Tex tex="\hat x" />
                     </button>
                   )}
                 </div>
@@ -83,7 +87,7 @@ export function ProjectionView() {
             <button type="button" className="link-button" onClick={() => setView('bigPicture')}>
               big picture
             </button>{' '}
-            (Aᵀ mode), and x̂ comes from the{' '}
+            (Aᵀ mode), and <Tex tex="\hat x" /> comes from the{' '}
             <button type="button" className="link-button" onClick={() => setView('normal')}>
               normal equation
             </button>

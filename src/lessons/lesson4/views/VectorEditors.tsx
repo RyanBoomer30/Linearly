@@ -1,4 +1,5 @@
 import { GridEditor } from '../../../components/editor/GridEditor';
+import { Tex } from '../../../components/display/Tex';
 import { useLesson4Store } from '../../../store/useLesson4Store';
 import { useLesson4System } from '../../../store/useLesson4System';
 import { attempt } from '../../../store/useSystem';
@@ -32,7 +33,7 @@ export function VectorEditors() {
         {column('y', yCells, 'y (any vector)')}
       </div>
       <button type="button" onClick={() => attempt(snapWToAxis)}>
-        Snap w to the axis: w = ‖x‖e₁
+        Snap w to the axis: <Tex tex="w = \|x\|e_1" />
       </button>
     </>
   );

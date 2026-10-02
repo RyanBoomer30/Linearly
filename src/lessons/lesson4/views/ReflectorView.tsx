@@ -1,4 +1,5 @@
 import { Caption } from '../../../components/display/Caption';
+import { MathText } from '../../../components/display/MathText';
 import { PrecisionBadge } from '../../../components/display/PrecisionBadge';
 import { Tex } from '../../../components/display/Tex';
 import { ViewNotice } from '../../../components/display/ViewNotice';
@@ -20,8 +21,9 @@ export function ReflectorView() {
       controls={
         <>
           <Caption section="§4.1">
-            A Householder reflector H sends x to any w of the same length by reflecting across the mirror U, the hyperplane
-            perpendicular to v = x − w. Then v = 2Px, so Hx = x − 2Px = (I − 2P)x.
+            <MathText>
+              {'A Householder reflector $H$ sends $x$ to any $w$ of the same length by reflecting across the mirror $U$, the hyperplane perpendicular to $v = x - w$. Then $v = 2Px$, so $Hx = x - 2Px = (I - 2P)x$.'}
+            </MathText>
           </Caption>
           <VectorEditors />
           {view.ok && view.value.reflector && <PrecisionBadge precision={view.value.reflector.precision} />}
@@ -39,7 +41,7 @@ export function ReflectorView() {
           )}
           {view.ok && view.value.notesCorrection && (
             <aside className="callout">
-              <strong>Notes correction.</strong> {view.value.notesCorrection}
+              <strong>Notes correction.</strong> <MathText>{view.value.notesCorrection}</MathText>
             </aside>
           )}
         </>

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { GridEditor } from '../../../components/editor/GridEditor';
+import { MathText } from '../../../components/display/MathText';
 import { ViewNotice } from '../../../components/display/ViewNotice';
 import type { HouseholderSign } from '../../../core/householder';
 import { LESSON4_PRESETS } from '../../../presets/lesson4';
@@ -13,14 +14,14 @@ export function SignPicker() {
   const sign = useLesson4Store((s) => s.sign);
   const setSign = useLesson4Store((s) => s.setSign);
   const options: [HouseholderSign, string][] = [
-    ['notes', 'w = +‖x‖e₁ (notes)'],
-    ['stable', 'w = −sign(x₁)‖x‖e₁ (stable)'],
+    ['notes', '$w = +\\|x\\|e_1$ (notes)'],
+    ['stable', '$w = -\\operatorname{sign}(x_1)\\|x\\|e_1$ (stable)'],
   ];
   return (
     <div className="segmented" role="group" aria-label="Householder sign">
       {options.map(([value, label]) => (
         <button key={value} type="button" className={sign === value ? 'active' : undefined} onClick={() => setSign(value)}>
-          {label}
+          <MathText>{label}</MathText>
         </button>
       ))}
     </div>

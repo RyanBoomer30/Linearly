@@ -19,6 +19,7 @@ import { bigPictureModel, pseudoinverseView, subspaceInfo, svdBigPicture } from 
 import { useViewModel } from '../useLessonSystem';
 import { Controls } from './Controls';
 import { Tex } from '../../../components/display/Tex';
+import { MathText } from '../../../components/display/MathText';
 
 const COMPLEMENT_NAMES: Record<SubspaceId, string> = {
   row: 'the row space C(Aᵀ)',
@@ -30,9 +31,9 @@ import { AmbientSpaceContents } from './SceneContents';
 
 const MODES: { id: BigPictureViewMode; label: string; hint: string }[] = [
   { id: 'dimensions', label: 'Dimensions', hint: 'Sizes and right angles: dim C(Aᵀ) = dim C(A) = r.' },
-  { id: 'A', label: 'A: ℝⁿ → ℝᵐ', hint: 'Split x = xᵣ + xₙ. A sends xᵣ to b and xₙ to 0, so Ax = A xᵣ = b.' },
+  { id: 'A', label: 'A: ℝⁿ → ℝᵐ', hint: 'Split $x = x_r + x_n$. $A$ sends $x_r$ to $b$ and $x_n$ to 0, so $Ax = Ax_r = b$.' },
   { id: 'At', label: 'Aᵀ: ℝᵐ → ℝⁿ', hint: 'Split b = p + e. Aᵀ sends e to 0, so Aᵀb = Aᵀp lands in the row space.' },
-  { id: 'svd', label: 'Orthonormal bases (SVD)', hint: 'Strang Fig. 2: Avᵢ = σᵢuᵢ. The v’s and u’s are orthonormal bases of all four subspaces.' },
+  { id: 'svd', label: 'Orthonormal bases (SVD)', hint: 'Strang Fig. 2: $Av_i = \\sigma_i u_i$. The $v$’s and $u$’s are orthonormal bases of all four subspaces.' },
   { id: 'pinv', label: 'Pseudoinverse A⁺', hint: 'A⁺ sends p to xᵣ and e to 0: A⁺b is the row-space solution.' },
 ];
 
@@ -88,7 +89,9 @@ export function BigPictureView() {
               </button>
             ))}
           </div>
-          <p className="caption">{hint}</p>
+          <p className="caption">
+            <MathText>{hint}</MathText>
+          </p>
           {mode === 'A' && (
             <VectorEditor
               label="x"
@@ -126,8 +129,12 @@ export function BigPictureView() {
         <ul className="checks" aria-label="Exact checks">
           {mode === 'A' ? (
             <>
-              <li>xᵣ · xₙ = {model.value.checks.xrDotXn.toString()}</li>
-              <li>A xₙ = ({model.value.checks.Axn.map(String).join(', ')})</li>
+              <li>
+                <Tex tex="x_r \cdot x_n" /> = {model.value.checks.xrDotXn.toString()}
+              </li>
+              <li>
+                <Tex tex="Ax_n" /> = ({model.value.checks.Axn.map(String).join(', ')})
+              </li>
               <li>A xᵣ = ({model.value.checks.Axr.map(String).join(', ')}) = b</li>
             </>
           ) : model.value.target ? (
