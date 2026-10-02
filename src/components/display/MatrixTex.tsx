@@ -7,6 +7,8 @@ export interface MatrixHighlights {
   rowBackgrounds?: (string | undefined)[];
   /** Background for specific entries, e.g. pivots (L1-G2). Key: "row,col". */
   entryBackgrounds?: Record<string, string>;
+  /** Text color for specific entries, e.g. multipliers in red (Lesson 3). Key: "row,col". Wins over columnColors. */
+  entryColors?: Record<string, string>;
 }
 
 interface MatrixTexProps {
@@ -31,7 +33,7 @@ export function matrixToTex(entries: string[][], augmented: boolean, h: MatrixHi
       row
         .map((entry, j) => {
           let cell = entry;
-          const fg = h.columnColors?.[j];
+          const fg = h.entryColors?.[`${i},${j}`] ?? h.columnColors?.[j];
           if (fg) cell = `\\textcolor{${fg}}{${cell}}`;
           const bg = h.entryBackgrounds?.[`${i},${j}`] ?? h.rowBackgrounds?.[i];
           if (bg) cell = `\\colorbox{${bg}}{$${cell}$}`;

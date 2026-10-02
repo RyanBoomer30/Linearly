@@ -12,6 +12,8 @@ export interface StepperState {
   last: () => void;
   togglePlay: () => void;
   setSpeed: (speed: number) => void;
+  /** Jump to step k (clamped), e.g. to keep the position when a view swaps traces (L3-MM4). */
+  goTo: (k: number) => void;
 }
 
 /**
@@ -56,5 +58,6 @@ export function useStepper(count: number, resetKey?: unknown): StepperState {
       setPlaying((p) => !p);
     },
     setSpeed,
+    goTo: (k) => setIndex(clamp(k)),
   };
 }

@@ -70,3 +70,69 @@ export const NOTES_ROUNDED = { origin: ['3'], line: ['2.5', '1.58'] };
 
 /** All three x equal: X has dependent columns. */
 export const DEPENDENT = { x: [1, 1, 1], y: [4, 6, 5] };
+
+// Section 11.3 test fixtures (Lesson 3 notes) ------------------------------------
+
+/** Lesson 1's A = CR, as the product of §3.1. */
+export const CR_PRODUCT = {
+  B: [
+    [1, 0],
+    [2, 1],
+    [3, -2],
+  ],
+  C: [
+    [1, 0, 1],
+    [0, 1, 1],
+  ],
+};
+
+/** Notes §3.2: the LU example. */
+export const LU_A = [
+  [1, 2, 2],
+  [2, 6, 5],
+  [-1, 8, 7],
+];
+export const LU_L = [
+  [1, 0, 0],
+  [2, 1, 0],
+  [-1, 5, 1],
+];
+export const LU_U = [
+  [1, 2, 2],
+  [0, 2, 1],
+  [0, 0, 4],
+];
+export const LU_B = [2, 5, -1];
+
+/** Notes §3.4: PA = LU with two row exchanges. */
+export const PALU_A = [
+  [1, 2, 2],
+  [2, 4, 2],
+  [-1, 1, 0],
+];
+export const PALU_P = [
+  [0, 1, 0],
+  [0, 0, 1],
+  [1, 0, 0],
+];
+export const PALU_L = [
+  [1, 0, 0],
+  ['-1/2', 1, 0],
+  ['1/2', 0, 1],
+];
+export const PALU_U = [
+  [2, 4, 2],
+  [0, 3, 1],
+  [0, 0, 1],
+];
+
+/** Lesson 2 houses, line model: XᵀX and XᵀY for three years (years 2 and 3 illustrative). */
+export const HOUSES_XTX = [
+  [3, '19/4'],
+  ['19/4', '133/16'],
+];
+export const HOUSES_XTY = [
+  [15, 25],
+  ['16.3', '27.125'],
+  [17, '28.5'],
+];

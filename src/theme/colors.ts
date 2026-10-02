@@ -57,3 +57,8 @@ export const dataRowColor = (i: number) => DATA_ROW_COLORS[i % DATA_ROW_COLORS.l
 /** Fitted model, residuals and the current θ marker (Lesson 2). */
 export const MODEL_COLOR = '#0072B2';
 export const RESIDUAL_COLOR = '#D55E00';
+
+/** Lesson 3: multipliers are red everywhere they appear (operation label, compact form, L), as in the notes. */
+export const MULTIPLIER_COLOR = '#CC3311';
+/** Growth chart curves (L3-K3). */
+export const COST_COLORS = { factor: '#0072B2', solve: '#009E73', fromScratch: '#D55E00' } as const;

@@ -261,3 +261,26 @@ select { background: var(--surface); border: 1px solid var(--border); border-rad
 
 .num { font-variant-numeric: tabular-nums; }
 .legend { list-style: none; margin: 0; padding: 0; display: flex; gap: 16px; flex-wrap: wrap; font-weight: 600; }
+
+/* Lesson 3 ---------------------------------------------------------------- */
+
+.grid-editor-label { font-weight: 600; margin-bottom: 4px; }
+.product-editors { display: flex; gap: 16px; flex-wrap: wrap; }
+.lu-panels { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+.lu-panels figure { margin: 0; }
+.lu-panels figcaption { font-weight: 600; color: var(--muted); }
+.heatmap-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.heatmap-op { font-size: 1.4rem; color: var(--muted); }
+.layer { display: flex; flex-direction: column; align-items: center; gap: 4px; opacity: 0.45; }
+.layer.kept { opacity: 1; }
+.matrix-heatmap { margin: 0; text-align: center; }
+.matrix-heatmap text { font-size: 11px; fill: var(--text); }
+.matrix-heatmap figcaption { font-size: 0.8rem; color: var(--muted); }
+.solve-chain { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 1.1rem; }
+.solve-chain-link { display: inline-flex; align-items: center; gap: 8px; }
+.solve-chain-arrow { padding: 2px 8px; border-radius: 6px; border: 1px solid var(--border); }
+.solve-chain-arrow.lower { border-color: #0072b2; }
+.solve-chain-arrow.upper { border-color: #d55e00; }
+.gallery { display: flex; flex-wrap: wrap; gap: 12px; }
+.entry-flight { position: fixed; z-index: 50; display: flex; align-items: center; justify-content: center; pointer-events: none; font-weight: 700; }
+.editor-buttons button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
