@@ -34,3 +34,26 @@ export const SUBSPACE_COLORS = {
   column: '#009E73',
   leftNull: '#CC79A7',
 } as const;
+
+/**
+ * F-T4: one color per data row, used for its table row, its point, its row of
+ * X and Y, its equation, and its axis in ℝⁿ. Cycles past 10 rows.
+ */
+export const DATA_ROW_COLORS = [
+  '#E69F00',
+  '#56B4E9',
+  '#009E73',
+  '#D55E00',
+  '#CC79A7',
+  '#0072B2',
+  '#882255',
+  '#117733',
+  '#AA4499',
+  '#44AA99',
+] as const;
+
+export const dataRowColor = (i: number) => DATA_ROW_COLORS[i % DATA_ROW_COLORS.length];
+
+/** Fitted model, residuals and the current θ marker (Lesson 2). */
+export const MODEL_COLOR = '#0072B2';
+export const RESIDUAL_COLOR = '#D55E00';

@@ -7,7 +7,9 @@ export type ViewId =
   | 'products'
   | 'cr'
   | 'subspaces'
-  | 'bigPicture';
+  | 'bigPicture'
+  | 'projection'
+  | 'normal';
 
 export interface Preset {
   id: string;
@@ -64,6 +66,38 @@ export const PRESETS: Preset[] = [
     b: ['1', '0'],
     view: 'bigPicture',
   },
+  {
+    // Lesson 2 notes §2.2: h(x) = θx through three houses. Ax = b has no solution.
+    id: 'housesOrigin',
+    name: 'Houses, through the origin (3×1)',
+    A: [['1'], ['2.25'], ['1.5']],
+    b: ['4', '6', '5'],
+    view: 'projection',
+  },
+  {
+    // Lesson 2 notes §2.2: h(x) = θ₀ + θ₁x. C(A) is a plane in ℝ³.
+    id: 'housesLine',
+    name: 'Houses, line (3×2)',
+    A: [
+      ['1', '1'],
+      ['1', '2.25'],
+      ['1', '1.5'],
+    ],
+    b: ['4', '6', '5'],
+    view: 'projection',
+  },
+  {
+    // Dependent columns: AᵀA = [[3, 3], [3, 3]] is singular (L2-N4).
+    id: 'dependentColumns',
+    name: 'Dependent columns (3×2)',
+    A: [
+      ['1', '1'],
+      ['1', '1'],
+      ['1', '1'],
+    ],
+    b: ['4', '6', '5'],
+    view: 'normal',
+  },
 ];
 
 export const presetById = (id: string) => PRESETS.find((p) => p.id === id);
@@ -93,4 +127,6 @@ export const DEFAULT_PRESET_FOR_VIEW: Record<ViewId, string> = {
   cr: 'cr',
   subspaces: 'consistent3x3',
   bigPicture: 'consistent3x3',
+  projection: 'housesLine',
+  normal: 'housesLine',
 };

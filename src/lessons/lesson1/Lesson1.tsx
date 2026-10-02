@@ -9,6 +9,8 @@ import { RowPictureView } from './views/RowPictureView';
 import { ColumnVsRowView } from './views/ColumnVsRowView';
 import { CRFactorizationView } from './views/CRFactorizationView';
 import { SubspacesView } from './views/SubspacesView';
+import { ProjectionView } from './views/ProjectionView';
+import { NormalEquationView } from './views/NormalEquationView';
 
 const VIEWS: { id: ViewId; label: string; component: ComponentType }[] = [
   { id: 'row', label: 'Row picture', component: RowPictureView },
@@ -19,6 +21,8 @@ const VIEWS: { id: ViewId; label: string; component: ComponentType }[] = [
   { id: 'cr', label: 'CR factorization', component: CRFactorizationView },
   { id: 'subspaces', label: 'Four subspaces', component: SubspacesView },
   { id: 'bigPicture', label: 'Big picture', component: BigPictureView },
+  { id: 'projection', label: 'Projection', component: ProjectionView },
+  { id: 'normal', label: 'Normal equation', component: NormalEquationView },
 ];
 
 /** Lesson 1: Matrices — Rows and Columns, Product and Factorization. */

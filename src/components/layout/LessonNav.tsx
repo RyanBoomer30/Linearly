@@ -6,14 +6,14 @@ export interface LessonInfo {
 
 export const LESSONS: LessonInfo[] = [
   { id: 1, title: 'Matrices: Rows and Columns', available: true },
-  { id: 2, title: 'Regression', available: false },
+  { id: 2, title: 'Data, Regression, and ML', available: true },
   { id: 3, title: 'Rank-1 and LU', available: false },
   { id: 4, title: 'Householder QR', available: false },
   { id: 5, title: 'Markov Chains', available: false },
   { id: 6, title: 'MDPs', available: false },
 ];
 
-/** F-D2: only Lesson 1 is active in Phase 1. */
+/** F-D2: Lessons 1 and 2 are active in Phase 2; later lessons are "coming soon." */
 export function LessonNav({ active, onSelect }: { active: number; onSelect: (id: number) => void }) {
   return (
     <nav className="lesson-nav" aria-label="Lessons">

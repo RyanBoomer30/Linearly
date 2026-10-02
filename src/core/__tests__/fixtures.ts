@@ -46,3 +46,27 @@ export const RANK1_2x2 = [
   [1, 1],
   [2, 2],
 ];
+
+/** Section 10.2 test fixtures (Lesson 2 notes). Decimals as strings so they parse exactly. */
+export const HOUSES = { x: ['1', '2.25', '1.5'], y: [4, 6, 5] };
+
+export const QUADRATIC = { x: [-1, 0, 1, 2], y: [1, 0, 0, 2] };
+
+/** Illustrative 2-feature set: living area, bedrooms → price. */
+export const TWO_FEATURES = {
+  area: ['1', '2.25', '1.5', '1.75', '2.5'],
+  bedrooms: [2, 4, 3, 3, 4],
+  price: [4, 6, 5, '5.5', '6.5'],
+};
+
+/** Notes §2.4 figure (illustrative values): curved data that a line underfits. Same as the 'curved' preset. */
+export const CURVED = {
+  x: ['0', '0.5', '1', '1.5', '2', '2.5', '3', '3.5', '4', '4.5', '5'],
+  y: ['1', '2.5', '3.2', '3', '2.1', '1.6', '1.8', '3', '4.8', '6', '6.3'],
+};
+
+/** The notes' rounded parameters (§2.2): θ* = 3 and θ* = (2.5, 1.58). */
+export const NOTES_ROUNDED = { origin: ['3'], line: ['2.5', '1.58'] };
+
+/** All three x equal: X has dependent columns. */
+export const DEPENDENT = { x: [1, 1, 1], y: [4, 6, 5] };

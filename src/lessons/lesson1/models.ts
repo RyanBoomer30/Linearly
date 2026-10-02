@@ -20,6 +20,7 @@ import {
 } from '../../core/matrix';
 import { addVectors, dot, matMul, matVec, normFloat, outer, scaleVector, subVectors } from '../../core/products';
 import { decomposeColumnLeftNull, decomposeRowNull } from '../../core/projection';
+import { notImplemented } from '../../core/notImplemented';
 import { Rational } from '../../core/rational';
 import { pivotColumns, rank, rrefAugmented, type AugmentedRrefResult } from '../../core/rref';
 import { evaluateSolution, solve, type SolutionSet } from '../../core/solve';
@@ -708,3 +709,104 @@ export function crColumnScene(A: Matrix, j: number): ColumnPictureScene {
     items.map((it, k) => ({ ...it, color: columnColor(cr.pivotCols[k]) }));
   return { ...scene, columns: recolor(scene.columns), tipToTail: recolor(scene.tipToTail) };
 }
+
+// Projection onto C(A) (least squares, Lesson 2 notes §2.2) ---------------------
+
+export interface ProjectionScene {
+  dim: 2 | 3;
+  /** C(A): a line or a plane through the origin (L2-P1). */
+  span: { kind: 'line' | 'plane'; vectors: Vec3[] };
+  /** The columns of A, in their column colors. */
+  columns: { to: Vec3; label: string; color: string }[];
+  b: Vec3;
+  p: Vec3;
+  /** e = b − p, drawn from p to b with a right-angle marker. */
+  e: { from: Vec3; to: Vec3 };
+  /** Ax at the slider x (L2-P2). */
+  Ax: Vec3;
+  /** ‖b − Ax‖ at the slider x. */
+  distance: number;
+  atOptimum: boolean;
+}
+
+export interface WeightControl {
+  /** "x_1" */
+  tex: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+}
+
+export interface ProjectionView {
+  /** null when m > 3: numbers and a note in place of the canvas (L2-P7). */
+  scene: ProjectionScene | null;
+  note: string | null;
+  /** Sliders for x, with ranges that keep x̂ comfortably inside (L2-P2). */
+  weights: WeightControl[];
+  /** x̂, or null when AᵀA is singular. */
+  xHat: Vector | null;
+  p: Vector;
+  e: Vector;
+  /** L2-P3: each column of A dotted with e, all zero (e ∈ N(Aᵀ)). */
+  orthogonality: { label: string; tex: string; value: Rational }[];
+}
+
+/**
+ * b = p + e: the closest vector to b in C(A) and the error perpendicular to
+ * it. `x` is the slider position (null = at x̂). Any m; draws when m ∈ {2, 3}.
+ */
+export function projectionView(A: Matrix, b: Vector | null, x: number[] | null): ProjectionView {
+  return notImplemented('projectionView');
+}
+
+// Normal equation (Lesson 2 notes §2.2–2.3) ----------------------------------------
+
+export type DerivationHighlight = 'e' | 'orthogonal' | 'normal';
+
+export interface DerivationStep {
+  tex: string;
+  reason: string;
+  /** What to highlight in the projection picture (L2-N1). */
+  highlight: DerivationHighlight;
+}
+
+export interface ProofStep {
+  tex: string;
+  reason: string;
+}
+
+export interface NormalEquationView {
+  /** L2-N1: e ⟂ C(A) → Aᵀ(b − Ax̂) = 0 → AᵀAx̂ = Aᵀb. */
+  derivation: DerivationStep[];
+  AtA: Matrix;
+  Atb: Vector;
+  /** L2-N3: rref of [AᵀA | Aᵀb] with the elimination stepper. */
+  trace: AugmentedRrefResult;
+  xHat: Vector | null;
+  /** L2-N4 */
+  invertibility: {
+    rank: number;
+    columns: number;
+    independent: boolean;
+    /** "A^TA \text{ is invertible} \iff A \text{ has independent columns}" */
+    theoremTex: string;
+    explanation: string;
+    /** "a₂ = a₁" (F-M14, via CR). */
+    dependencies: string[];
+  };
+  /** L2-N5: both directions of the theorem, as expandable steps. */
+  proof: { title: string; steps: ProofStep[] }[];
+  /** L2-N6: for the house presets, where the Lesson 2 notes round x̂ (400/133 ≈ 3.008, notes: 3). */
+  roundingNote: string | null;
+}
+
+export function normalEquationView(A: Matrix, b: Vector | null): NormalEquationView {
+  return notImplemented('normalEquationView');
+}
+
+/** L2-N2: the dot product behind one entry, e.g. "(A^TA)_{12} = 1\cdot1 + 1\cdot2.25 + 1\cdot1.5 = 4.75". */
+export function entryDotProduct(A: Matrix, b: Vector | null, which: 'AtA' | 'Atb', i: number, j: number): string {
+  return notImplemented('entryDotProduct');
+}
+

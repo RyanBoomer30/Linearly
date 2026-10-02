@@ -85,7 +85,7 @@ export function MatrixEditor({ showB = true, invalid = [], onColumnClick }: Matr
  * F-E5: arrow keys / Enter move between cells (Tab works natively). Left and
  * right only leave a cell when the caret is already at its edge.
  */
-function onCellKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+export function onCellKeyDown(e: KeyboardEvent<HTMLInputElement>) {
   const input = e.currentTarget;
   const row = Number(input.dataset.row);
   const col = Number(input.dataset.col);

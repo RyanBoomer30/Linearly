@@ -1,14 +1,17 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense } from 'react';
 import { LessonNav } from './components/layout/LessonNav';
 import { ThemeToggle } from './components/layout/ThemeToggle';
+import { useStore } from './store/useStore';
 import { useResolvedTheme } from './theme/useTheme';
 
 // NF-2: lesson modules are lazy-loaded.
 const Lesson1 = lazy(() => import('./lessons/lesson1/Lesson1'));
+const Lesson2 = lazy(() => import('./lessons/lesson2/Lesson2'));
 
 export function App() {
   useResolvedTheme();
-  const [lesson, setLesson] = useState(1);
+  const lesson = useStore((s) => s.lesson);
+  const setLesson = useStore((s) => s.setLesson);
 
   return (
     <div className="app">
@@ -19,7 +22,10 @@ export function App() {
       </header>
       <LessonNav active={lesson} onSelect={setLesson} />
       <main>
-        <Suspense fallback={<p className="loading">Loading lesson…</p>}>{lesson === 1 && <Lesson1 />}</Suspense>
+        <Suspense fallback={<p className="loading">Loading lesson…</p>}>
+          {lesson === 1 && <Lesson1 />}
+          {lesson === 2 && <Lesson2 />}
+        </Suspense>
       </main>
     </div>
   );

@@ -14,10 +14,12 @@ interface Canvas3DProps {
   cameraPosition?: Vec3;
   /** Points to frame on load and on Auto-fit (F-C6). */
   fit?: Vec3[];
+  /** Skip the built-in grid and axes; data charts draw their own (F-C7). */
+  bare?: boolean;
 }
 
 /** F-C2: perspective camera, orbit controls, labeled x/y/z axes, reset-view button. z is up. */
-export function Canvas3D({ children, extent = 6, cameraPosition = [10, 8, 7], fit }: Canvas3DProps) {
+export function Canvas3D({ children, extent = 6, cameraPosition = [10, 8, 7], fit, bare = false }: Canvas3DProps) {
   const colors = useSceneColors();
   const controls = useRef<ComponentRef<typeof OrbitControls>>(null);
   const labels = useRef<HTMLDivElement>(null);
@@ -30,9 +32,9 @@ export function Canvas3D({ children, extent = 6, cameraPosition = [10, 8, 7], fi
         <ambientLight intensity={0.7} />
         <directionalLight position={[5, 8, 10]} intensity={0.8} />
         <OrbitControls ref={controls} makeDefault />
-        <GridLines extent={extent} color={colors.grid} />
+        {!bare && <GridLines extent={extent} color={colors.grid} />}
         <LabelLayerContext.Provider value={labels}>
-          <Axes extent={extent} dims={3} color={colors.axis} labelColor={colors.text} />
+          {!bare && <Axes extent={extent} dims={3} color={colors.axis} labelColor={colors.text} />}
           {children}
         </LabelLayerContext.Provider>
         {fit && fit.length > 0 && <FitBridge points={fit} fitRef={fitRef} />}

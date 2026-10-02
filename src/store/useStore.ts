@@ -13,6 +13,8 @@ export interface AppState {
   uCells: string[];
   vCells: string[];
   presetId: string | null;
+  /** Active lesson (F-D2). Lives here so Lesson 2 can open Lesson 1 (L2-P6). */
+  lesson: number;
   view: ViewId;
   theme: ThemeSetting;
   /** Shown after a view switch had to replace the matrix; null otherwise. */
@@ -31,6 +33,7 @@ export interface AppState {
   loadPreset: (id: string) => void;
   /** Keeps A and b when they fit the new view; otherwise loads its default preset and sets `notice`. */
   setView: (view: ViewId) => void;
+  setLesson: (lesson: number) => void;
   dismissNotice: () => void;
   setTheme: (theme: ThemeSetting) => void;
 }
@@ -54,6 +57,7 @@ export const useStore = create<AppState>((set) => ({
   uCells: ['1', '1', '1'],
   vCells: ['1', '2', '3'],
   presetId: initial.id,
+  lesson: 1,
   view: 'row',
   theme: 'system',
   notice: null,
@@ -102,6 +106,7 @@ export const useStore = create<AppState>((set) => ({
         notice: `${VIEW_REQUIREMENTS[view]!.needs}, and your matrix is ${m}×${n}, so the "${p.name}" preset was loaded.`,
       };
     }),
+  setLesson: (lesson) => set({ lesson }),
   dismissNotice: () => set({ notice: null }),
   setTheme: (theme) => set({ theme }),
 }));

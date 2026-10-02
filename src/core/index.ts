@@ -8,3 +8,6 @@ export * from './products';
 export * from './subspaces';
 export * from './factorization';
 export * from './projection';
+export * from './leastSquares';
+export * from './regression';
+export * from './sampling';
