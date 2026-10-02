@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { BigPictureViewMode } from '../components/diagram/types';
 import { DEFAULT_PRESET_FOR_VIEW, fitsView, presetById, VIEW_REQUIREMENTS, type Preset, type ViewId } from '../presets';
 
 export type ThemeSetting = 'light' | 'dark' | 'system';
@@ -16,6 +17,8 @@ export interface AppState {
   /** Active lesson (F-D2). Lives here so Lesson 2 can open Lesson 1 (L2-I4, L2-L7). */
   lesson: number;
   view: ViewId;
+  /** The big picture's mode; in the store so Lesson 4 can open the SVD mode (§8.8). */
+  bigPictureMode: BigPictureViewMode;
   theme: ThemeSetting;
   /** Shown after a view switch had to replace the matrix; null otherwise. */
   notice: string | null;
@@ -34,6 +37,7 @@ export interface AppState {
   /** Keeps A and b when they fit the new view; otherwise loads its default preset and sets `notice`. */
   setView: (view: ViewId) => void;
   setLesson: (lesson: number) => void;
+  setBigPictureMode: (mode: BigPictureViewMode) => void;
   dismissNotice: () => void;
   setTheme: (theme: ThemeSetting) => void;
 }
@@ -59,6 +63,7 @@ export const useStore = create<AppState>((set) => ({
   presetId: initial.id,
   lesson: 1,
   view: 'row',
+  bigPictureMode: 'dimensions',
   theme: 'system',
   notice: null,
 
@@ -107,6 +112,7 @@ export const useStore = create<AppState>((set) => ({
       };
     }),
   setLesson: (lesson) => set({ lesson }),
+  setBigPictureMode: (bigPictureMode) => set({ bigPictureMode }),
   dismissNotice: () => set({ notice: null }),
   setTheme: (theme) => set({ theme }),
 }));

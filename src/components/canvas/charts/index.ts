@@ -1,11 +1,12 @@
 export { Axes2D } from './Axes2D';
 export { Axes3D } from './Axes3D';
 export { ChartDragHandle } from './ChartDragHandle';
-export { chartFit, ChartFrameContext, fromWorld, toWorld, useChartFrame, type AxisSpec, type ChartFrame } from './frame';
+export { axisValue, chartFit, ChartFrameContext, fromWorld, toWorld, useChartFrame, type AxisSpec, type ChartFrame } from './frame';
 export { FunctionPlot } from './FunctionPlot';
 export { Heatmap } from './Heatmap';
 export { ResidualSquare } from './ResidualSquare';
 export { Scatter, type ScatterPoint } from './Scatter';
 export { Segment } from './Segment';
+export { SlopeLine } from './SlopeLine';
 export { SurfacePlot } from './SurfacePlot';
-export { contourLevels, contourSegments, niceTicks } from './ticks';
+export { contourLevels, contourSegments, logTicks, niceTicks } from './ticks';

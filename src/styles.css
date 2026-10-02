@@ -284,3 +284,14 @@ select { background: var(--surface); border: 1px solid var(--border); border-rad
 .gallery { display: flex; flex-wrap: wrap; gap: 12px; }
 .entry-flight { position: fixed; z-index: 50; display: flex; align-items: center; justify-content: center; pointer-events: none; font-weight: 700; }
 .editor-buttons button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* Lesson 4 ---------------------------------------------------------------- */
+
+.lesson-intro { margin: 12px 0 0; color: var(--muted); max-width: 900px; }
+.panel-header { display: flex; justify-content: flex-end; }
+.precision-badge { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 1px 8px; border-radius: 999px; border: 1px solid; vertical-align: middle; }
+.precision-badge.exact { color: #009e73; border-color: #009e73; }
+.precision-badge.float { color: #d55e00; border-color: #d55e00; }
+.precision-reason { font-weight: 400; }
+.comparison-table caption { caption-side: bottom; text-align: left; color: var(--muted); padding-top: 4px; }
+.svd-panel { border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; background: var(--surface); }

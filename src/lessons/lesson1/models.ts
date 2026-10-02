@@ -11,6 +11,7 @@ import {
   matrixEquals,
   shape,
   splitAugmented,
+  toFloatMatrix,
   toFloatVector,
   transpose,
   vectorEquals,
@@ -21,12 +22,14 @@ import {
 import { addVectors, dot, matMul, matVec, normFloat, outer, scaleVector, subVectors } from '../../core/products';
 import { decomposeColumnLeftNull, decomposeRowNull, rowSpaceSolution } from '../../core/projection';
 import { describeDependency, diagnoseDependencies, leastSquares } from '../../core/leastSquares';
+import { fMatVec } from '../../core/float';
+import { pseudoinverse, svd } from '../../core/svd';
 import { notesRoundingNote } from '../../presets/notesFigures';
 import { Rational } from '../../core/rational';
 import { pivotColumns, rank, rrefAugmented, type AugmentedRrefResult } from '../../core/rref';
 import { evaluateSolution, solve, type SolutionSet } from '../../core/solve';
 import { columnSpaceBasis, fourSubspaces, inColumnSpace, type FourSubspaces } from '../../core/subspaces';
-import { columnColor, rowColor } from '../../theme/colors';
+import { columnColor, rowColor, SUBSPACE_COLORS } from '../../theme/colors';
 
 // Formatting helpers ---------------------------------------------------------
 
@@ -910,3 +913,86 @@ export function entryDotProduct(A: Matrix, b: Vector | null, which: 'AtA' | 'Atb
   return `${name} = ${terms} = ${decimalTex(dot(left, right))}`;
 }
 
+
+// Big picture: orthonormal bases from the SVD (Lesson 4 §8.8, Strang Fig. 2) ----------
+
+export interface SvdBigPicture {
+  /** Singular values, largest first (floating point, F-M29). */
+  sigma: number[];
+  rank: number;
+  /** L4-BP1: v₁ … vᵣ (row space), vᵣ₊₁ … vₙ (N(A)), u₁ … uᵣ (C(A)), uᵣ₊₁ … uₘ (N(Aᵀ)). */
+  bases: Record<SubspaceId, { label: string; vector: number[] }[]>;
+  /** L4-BP2: Avᵢ = σᵢuᵢ for i ≤ r, Avᵢ = 0 beyond; Aᵀuᵢ = σᵢvᵢ. */
+  arrows: { tex: string; zero: boolean }[];
+  /** Drawn in the companion views (L1-BP5): vectors in ℝⁿ and in ℝᵐ. */
+  scene: { domain: { to: Vec3; label: string; color: string }[]; codomain: { to: Vec3; label: string; color: string }[] };
+}
+
+/** L4-BP1–BP2 for the shared Lesson 1 matrix. */
+export function svdBigPicture(A: Matrix): SvdBigPicture {
+  const { rows: m, cols: n } = shape(A);
+  const { U, sigma, V, rank: r } = svd(toFloatMatrix(A));
+  const col = (M: number[][], j: number) => M.map((row) => row[j]);
+  const fmt = (x: number) => String(Number(x.toPrecision(4)));
+  const named = (M: number[][], name: string, from: number, to: number) =>
+    Array.from({ length: to - from }, (_, k) => ({ label: `${name}${subDigits(from + k + 1)}`, vector: col(M, from + k) }));
+  const bases: SvdBigPicture['bases'] = {
+    row: named(V, 'v', 0, r),
+    null: named(V, 'v', r, n),
+    column: named(U, 'u', 0, r),
+    leftNull: named(U, 'u', r, m),
+  };
+  const arrows = Array.from({ length: n }, (_, i) =>
+    i < r
+      ? { tex: `Av_${i + 1} = ${fmt(sigma[i])}\\,u_${i + 1},\\quad A^Tu_${i + 1} = ${fmt(sigma[i])}\\,v_${i + 1}`, zero: false }
+      : { tex: `Av_${i + 1} = 0`, zero: true },
+  );
+  const arrowsOf = (M: number[][], name: string, count: number, inSpace: string, outSpace: string) =>
+    Array.from({ length: count }, (_, i) => ({ to: toVec3(col(M, i)), label: `${name}_${i + 1}`, color: i < r ? inSpace : outSpace }));
+  return {
+    sigma,
+    rank: r,
+    bases,
+    arrows,
+    scene: {
+      domain: arrowsOf(V, 'v', n, SUBSPACE_COLORS.row, SUBSPACE_COLORS.null),
+      codomain: arrowsOf(U, 'u', m, SUBSPACE_COLORS.column, SUBSPACE_COLORS.leftNull),
+    },
+  };
+}
+
+export interface PseudoinverseView {
+  /** A⁺b in floating point (F-M32). */
+  xr: number[];
+  /** L4-BP3 / L4-BP4: the exact row-space solution of Ax = p (F-M10), used as the check. */
+  exact: Vector;
+  matches: boolean;
+  /** "A has independent columns, so A⁺b is the least squares x*." or "… the shortest least squares solution." */
+  meaning: string;
+  /** p goes to xᵣ, e goes to 0. */
+  p: Vector;
+  e: Vector;
+}
+
+/** L4-BP3: the pseudoinverse sends b to the row-space solution. */
+export function pseudoinverseView(A: Matrix, b: Vector | null): PseudoinverseView {
+  const { rows: m, cols: n } = shape(A);
+  const target = orZeros(b, m);
+  const xr = fMatVec(pseudoinverse(toFloatMatrix(A)), toFloatVector(target));
+  const { p, e } = decomposeColumnLeftNull(A, target);
+  const exact = rowSpaceSolution(A, p)!;
+  const reference = toFloatVector(exact);
+  const scale = Math.max(1, Math.hypot(...reference));
+  const matches = Math.hypot(...xr.map((v, i) => v - reference[i])) <= 1e-9 * scale;
+  const independent = rank(A) === n;
+  return {
+    xr,
+    exact,
+    matches,
+    meaning: independent
+      ? 'A has independent columns, so A⁺b is the least squares solution x* (Lesson 4 §8.5).'
+      : 'A has dependent columns, so many x reach p; A⁺b is the shortest least squares solution, the one in the row space.',
+    p,
+    e,
+  };
+}

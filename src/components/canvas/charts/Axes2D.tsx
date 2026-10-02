@@ -4,11 +4,16 @@ import { attempt } from '../../../store/useSystem';
 import { useSceneColors } from '../../../theme/useTheme';
 import { Label } from '../primitives/Label';
 import type { Vec3 } from '../types';
-import { axisScales, ChartFrameContext, toWorld, type AxisSpec, type ChartFrame } from './frame';
-import { niceTicks } from './ticks';
+import { ChartFrameContext, toWorld, type AxisSpec, type ChartFrame } from './frame';
+import { logTicks, niceTicks } from './ticks';
 
 export const axisTitle = (a: AxisSpec) => (a.unit ? `${a.title}, ${a.unit}` : a.title);
-const fmtTick = (t: number) => String(+t.toFixed(4)).replace('-', '−');
+const SUPERSCRIPT: Record<string, string> = { '-': '⁻', 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹' };
+/** Very small or large ticks (log axes) as powers of ten: 10⁻¹⁶. */
+const fmtTick = (t: number) =>
+  Math.abs(t) > 0 && (Math.abs(t) < 1e-3 || Math.abs(t) >= 1e5)
+    ? `10${String(Math.round(Math.log10(Math.abs(t)))).replace(/[-\d]/g, (c) => SUPERSCRIPT[c])}`
+    : String(+t.toFixed(4)).replace('-', '−');
 
 /**
  * F-C7: data axes with nice ticks, tick labels, and titles with units. Place
@@ -16,11 +21,11 @@ const fmtTick = (t: number) => String(+t.toFixed(4)).replace('-', '−');
  */
 export function Axes2D({ frame, children }: { frame: ChartFrame; children?: ReactNode }) {
   const colors = useSceneColors();
-  const [sx, sy] = axisScales(frame);
-  const right = (frame.x.max - frame.x.min) * sx;
-  const top = (frame.y.max - frame.y.min) * sy;
-  const xTicks = attempt(() => niceTicks(frame.x.min, frame.x.max));
-  const yTicks = attempt(() => niceTicks(frame.y.min, frame.y.max));
+  const right = toWorld(frame, [frame.x.max, frame.y.min])[0];
+  const top = toWorld(frame, [frame.x.min, frame.y.max])[1];
+  const ticksFor = (a: AxisSpec) => attempt(() => (a.log ? logTicks(a.min, a.max) : niceTicks(a.min, a.max)));
+  const xTicks = ticksFor(frame.x);
+  const yTicks = ticksFor(frame.y);
   const grid: Vec3[] = [];
   if (xTicks.ok) for (const t of xTicks.value) grid.push(toWorld(frame, [t, frame.y.min]), toWorld(frame, [t, frame.y.max]));
   if (yTicks.ok) for (const t of yTicks.value) grid.push(toWorld(frame, [frame.x.min, t]), toWorld(frame, [frame.x.max, t]));

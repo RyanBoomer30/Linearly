@@ -7,6 +7,12 @@ export type SubspaceId = 'row' | 'null' | 'column' | 'leftNull';
  */
 export type BigPictureMode = 'dimensions' | 'A' | 'At';
 
+/**
+ * The big picture view's modes: the diagram's three, plus the Lesson 4
+ * upgrade (§8.8): 'svd' (orthonormal bases, Strang Fig. 2) and 'pinv' (A⁺b).
+ */
+export type BigPictureViewMode = BigPictureMode | 'svd' | 'pinv';
+
 /** Plain-text labels for the points in the diagram (computed exactly elsewhere). */
 export interface BigPictureLabels {
   x?: string;

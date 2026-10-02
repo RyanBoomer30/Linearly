@@ -5,14 +5,17 @@ const realSpace = (k: number) => `ℝ${String(k).replace(/\d/g, (d) => '⁰¹²�
 import { Canvas2D } from '../../../components/canvas/Canvas2D';
 import { Canvas3D } from '../../../components/canvas/Canvas3D';
 import { BigPictureDiagram } from '../../../components/diagram/BigPictureDiagram';
-import type { BigPictureMode, SubspaceId } from '../../../components/diagram/types';
+import type { BigPictureMode, BigPictureViewMode, SubspaceId } from '../../../components/diagram/types';
+import { Arrow, Label } from '../../../components/canvas/primitives';
+import { formatFloat } from '../../../components/display/AnyMatrixTex';
+import { PrecisionBadge } from '../../../components/display/PrecisionBadge';
 import { Caption } from '../../../components/display/Caption';
 import { ViewNotice } from '../../../components/display/ViewNotice';
 import { VectorEditor } from '../../../components/editor/VectorEditor';
 import { ModuleLayout } from '../../../components/layout/ModuleLayout';
 import { vector } from '../../../core/matrix';
 import { useStore } from '../../../store/useStore';
-import { bigPictureModel, subspaceInfo } from '../models';
+import { bigPictureModel, pseudoinverseView, subspaceInfo, svdBigPicture } from '../models';
 import { useViewModel } from '../useLessonSystem';
 import { Controls } from './Controls';
 import { Tex } from '../../../components/display/Tex';
@@ -25,11 +28,16 @@ const COMPLEMENT_NAMES: Record<SubspaceId, string> = {
 };
 import { AmbientSpaceContents } from './SceneContents';
 
-const MODES: { id: BigPictureMode; label: string; hint: string }[] = [
+const MODES: { id: BigPictureViewMode; label: string; hint: string }[] = [
   { id: 'dimensions', label: 'Dimensions', hint: 'Sizes and right angles: dim C(Aᵀ) = dim C(A) = r.' },
   { id: 'A', label: 'A: ℝⁿ → ℝᵐ', hint: 'Split x = xᵣ + xₙ. A sends xᵣ to b and xₙ to 0, so Ax = A xᵣ = b.' },
   { id: 'At', label: 'Aᵀ: ℝᵐ → ℝⁿ', hint: 'Split b = p + e. Aᵀ sends e to 0, so Aᵀb = Aᵀp lands in the row space.' },
+  { id: 'svd', label: 'Orthonormal bases (SVD)', hint: 'Strang Fig. 2: Avᵢ = σᵢuᵢ. The v’s and u’s are orthonormal bases of all four subspaces.' },
+  { id: 'pinv', label: 'Pseudoinverse A⁺', hint: 'A⁺ sends p to xᵣ and e to 0: A⁺b is the row-space solution.' },
 ];
+
+/** The diagram draws three modes; the SVD modes reuse them. */
+const DIAGRAM_MODE: Record<BigPictureViewMode, BigPictureMode> = { dimensions: 'dimensions', A: 'A', At: 'At', svd: 'dimensions', pinv: 'At' };
 
 /** ℝ² and ℝ³ get a canvas; ℝ¹ and ℝ⁴ are diagram-only. */
 function AmbientCanvas({ dim, fit, children }: { dim: number; fit?: Vec3[]; children: ReactNode }) {
@@ -46,13 +54,17 @@ function AmbientCanvas({ dim, fit, children }: { dim: number; fit?: Vec3[]; chil
 export function BigPictureView() {
   const m = useStore((s) => s.aCells.length);
   const n = useStore((s) => s.aCells[0]?.length ?? 0);
-  const [mode, setMode] = useState<BigPictureMode>('dimensions');
+  const mode = useStore((s) => s.bigPictureMode);
+  const setMode = useStore((s) => s.setBigPictureMode);
+  const diagramMode = DIAGRAM_MODE[mode];
   const [focus, setFocus] = useState<SubspaceId | null>(null);
   const [xCells, setXCells] = useState<string[]>(['2', '1', '0']);
   const xs = xCells.length === n ? xCells : Array.from({ length: n }, (_, i) => xCells[i] ?? '0');
 
   const model = useViewModel((A, b) => bigPictureModel(A, vector(xs), b), [xs.join(',')]);
   const info = model.ok && focus ? subspaceInfo(model.value, focus) : null;
+  const svdModel = useViewModel((A) => (mode === 'svd' || mode === 'pinv' ? svdBigPicture(A) : null), [mode]);
+  const pinv = useViewModel((A, b) => (mode === 'pinv' ? pseudoinverseView(A, b) : null), [mode]);
   const hint = MODES.find((md) => md.id === mode)!.hint;
 
   return (
@@ -75,9 +87,6 @@ export function BigPictureView() {
                 {md.label}
               </button>
             ))}
-            <button type="button" disabled title="Needs the SVD — coming in Lesson 4">
-              Orthonormal bases (SVD)
-            </button>
           </div>
           <p className="caption">{hint}</p>
           {mode === 'A' && (
@@ -107,12 +116,13 @@ export function BigPictureView() {
         m={m}
         n={n}
         rank={model.ok ? model.value.rank : null}
-        mode={mode}
+        mode={diagramMode}
         focus={focus}
         onFocus={setFocus}
         labels={model.ok ? model.value.labels : undefined}
       />
-      {model.ok && mode !== 'dimensions' && (
+      {(mode === 'svd' || mode === 'pinv') && <SvdPanel svd={svdModel} pinv={mode === 'pinv' ? pinv : null} />}
+      {model.ok && (mode === 'A' || mode === 'At') && (
         <ul className="checks" aria-label="Exact checks">
           {mode === 'A' ? (
             <>
@@ -135,7 +145,8 @@ export function BigPictureView() {
         <figure>
           <figcaption>{realSpace(n)}: row space and nullspace</figcaption>
           <AmbientCanvas dim={n} fit={model.ok ? [model.value.scene.x, model.value.scene.xr, model.value.scene.xn] : undefined}>
-            {model.ok && <AmbientSpaceContents scene={model.value.scene} side="domain" mode={mode} focus={focus} />}
+            {model.ok && mode !== 'svd' && <AmbientSpaceContents scene={model.value.scene} side="domain" mode={diagramMode} focus={focus} />}
+            {mode === 'svd' && svdModel.ok && svdModel.value && <SvdVectors vectors={svdModel.value.scene.domain} />}
           </AmbientCanvas>
         </figure>
         <figure>
@@ -144,10 +155,80 @@ export function BigPictureView() {
             dim={m}
             fit={model.ok ? [model.value.scene.b, ...(model.value.scene.t ? [model.value.scene.t] : [])] : undefined}
           >
-            {model.ok && <AmbientSpaceContents scene={model.value.scene} side="codomain" mode={mode} focus={focus} />}
+            {model.ok && mode !== 'svd' && <AmbientSpaceContents scene={model.value.scene} side="codomain" mode={diagramMode} focus={focus} />}
+            {mode === 'svd' && svdModel.ok && svdModel.value && <SvdVectors vectors={svdModel.value.scene.codomain} />}
           </AmbientCanvas>
         </figure>
       </div>
     </ModuleLayout>
+  );
+}
+
+type SvdModel = ReturnType<typeof svdBigPicture>;
+type PinvModel = ReturnType<typeof pseudoinverseView>;
+type Maybe<T> = { ok: true; value: T | null } | { ok: false; error: string };
+
+const SUBSPACE_TITLES: Record<SubspaceId, string> = {
+  row: 'Row space C(Aᵀ)',
+  null: 'Nullspace N(A)',
+  column: 'Column space C(A)',
+  leftNull: 'Left nullspace N(Aᵀ)',
+};
+const tuple = (v: number[]) => `(${v.map((x) => formatFloat(Math.abs(x) < 1e-12 ? 0 : x, 4)).join(', ')})`;
+
+/** L4-BP1–BP4: singular values, orthonormal bases, Avᵢ = σᵢuᵢ, and the pseudoinverse. */
+function SvdPanel({ svd, pinv }: { svd: Maybe<SvdModel>; pinv: Maybe<PinvModel> | null }) {
+  if (!svd.ok) return <ViewNotice error={svd.error} />;
+  if (!svd.value) return null;
+  const s = svd.value;
+  return (
+    <section className="svd-panel">
+      <h3>
+        Singular value decomposition <PrecisionBadge precision={{ kind: 'float', reason: 'singular values are found iteratively' }} />
+      </h3>
+      <p>
+        σ = {s.sigma.map((x) => formatFloat(x, 4)).join(', ')} · rank {s.rank}
+      </p>
+      <dl className="basis-list">
+        {(Object.keys(SUBSPACE_TITLES) as SubspaceId[]).map((id) => (
+          <div key={id}>
+            <dt>{SUBSPACE_TITLES[id]}</dt>
+            <dd>{s.bases[id].length ? s.bases[id].map((b) => `${b.label} = ${tuple(b.vector)}`).join('; ') : '{0}'}</dd>
+          </div>
+        ))}
+      </dl>
+      <ul className="checks">
+        {s.arrows.map((a) => (
+          <li key={a.tex}>
+            <Tex tex={a.tex} />
+          </li>
+        ))}
+      </ul>
+      {pinv && !pinv.ok && <ViewNotice error={pinv.error} />}
+      {pinv?.ok && pinv.value && (
+        <div className="readout">
+          <p>
+            A⁺b = {tuple(pinv.value.xr)}; the exact row-space solution is{' '}
+            <Tex tex={`(${pinv.value.exact.map((x) => x.toTex()).join(', ')})`} />{' '}
+            <span className={pinv.value.matches ? 'hit' : 'solution-msg warn'}>{pinv.value.matches ? '✓ they match' : '✗ they differ'}</span>
+          </p>
+          <p>{pinv.value.meaning}</p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** L4-BP1: the v's (in ℝⁿ) or u's (in ℝᵐ) as arrows in the companion views. */
+function SvdVectors({ vectors }: { vectors: { to: Vec3; label: string; color: string }[] }) {
+  return (
+    <>
+      {vectors.map((v) => (
+        <group key={v.label}>
+          <Arrow to={v.to} color={v.color} />
+          <Label position={v.to} tex={v.label} color={v.color} />
+        </group>
+      ))}
+    </>
   );
 }

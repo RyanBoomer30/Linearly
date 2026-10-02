@@ -1,3 +1,4 @@
+import { q } from '../rational';
 /** Section 9 test fixtures (Lesson 1 notes), as plain numbers. */
 export const SYSTEM_2x2 = {
   A: [
@@ -136,3 +137,57 @@ export const HOUSES_XTY = [
   ['16.3', '27.125'],
   [17, '28.5'],
 ];
+
+// Section 12.4 test fixtures (Lesson 4 notes) ------------------------------------
+
+/** Notes §4.1: the reflector example. */
+export const REFLECTOR = { x: [2, 2, 1], w: [3, 0, 0] };
+export const REFLECTOR_P6 = [
+  [1, -2, -1],
+  [-2, 4, 2],
+  [-1, 2, 1],
+];
+/** 3H, also 3Ĥ₂ in §4.3. */
+export const REFLECTOR_H3 = [
+  [2, 2, 1],
+  [2, -1, -2],
+  [1, -2, 2],
+];
+
+/** Notes §4.3–4.4: the 4 × 2 QR and least-squares example. */
+export const QR_A = [
+  [1, 4],
+  [1, 1],
+  [1, 1],
+  [1, 0],
+];
+export const QR_B = [3, -1, 1, 3];
+/** 2H₁ */
+export const QR_H1_2 = [
+  [1, 1, 1, 1],
+  [1, 1, -1, -1],
+  [1, -1, 1, -1],
+  [1, -1, -1, 1],
+];
+export const QR_H1A = [
+  [2, 3],
+  [0, 2],
+  [0, 2],
+  [0, 1],
+];
+export const QR_R = [
+  [2, 3],
+  [0, 3],
+  [0, 0],
+  [0, 0],
+];
+/** 6Q */
+export const QR_Q6 = [
+  [3, 5, -1, 1],
+  [3, -1, 5, 1],
+  [3, -1, -1, -5],
+  [3, -3, -3, 3],
+];
+
+/** Scale every entry of an integer matrix by 1/d, as strings. */
+export const over = (M: number[][], d: number) => M.map((r) => r.map((x) => q(x, d).toString()));

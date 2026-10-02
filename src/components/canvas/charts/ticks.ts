@@ -16,6 +16,20 @@ export function niceTicks(min: number, max: number, target = 6): number[] {
   return ticks;
 }
 
+/** F-C10: ticks at powers of ten covering [min, max] (both > 0), thinned to about `target` of them. */
+export function logTicks(min: number, max: number, target = 8): number[] {
+  const lo = Math.ceil(Math.log10(min) - 1e-9);
+  const hi = Math.floor(Math.log10(max) + 1e-9);
+  if (hi < lo) return [];
+  // The smallest step that divides the span, so both ends are labeled, with at most target + 1 ticks.
+  const span = hi - lo;
+  let step = 1;
+  while (step < span && (span % step !== 0 || span / step > target)) step++;
+  const ticks: number[] = [];
+  for (let e = lo; e <= hi; e += step) ticks.push(Number(`1e${e}`));
+  return ticks;
+}
+
 /** Evenly spaced contour levels between a grid's min and max (F-C9). */
 export function contourLevels(grid: FloatGrid, count = 10): number[] {
   return Array.from({ length: count }, (_, k) => grid.min + ((grid.max - grid.min) * (k + 1)) / (count + 1));
