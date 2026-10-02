@@ -19,6 +19,7 @@ const COMPARE_MODELS: ModelChoice[] = [{ kind: 'origin' }, { kind: 'line' }];
 /** §6.1 */
 export function DataModelView() {
   const theta = useDataStore((s) => s.theta);
+  const featureCount = useDataStore((s) => s.columns.length - 1);
   const view = useLessonData((d) => dataModelView(d));
   // Notes §2.2 figure: the best line through the origin against the best line with an intercept.
   const [compare, setCompare] = useState(false);
@@ -48,19 +49,21 @@ export function DataModelView() {
             <input type="checkbox" checked={compare} onChange={(e) => setCompare(e.target.checked)} /> Compare h(x) = θx
             with h(x) = θ₀ + θ₁x
           </label>
-          <section className="predict">
-            <h3>Predict</h3>
-            <label className="inline-field">
-              New x{' '}
-              <input className="cell" value={xText} onChange={(e) => setXText(e.target.value)} aria-invalid={!x} />
-            </label>
-            {prediction.ok && prediction.value && (
-              <p>
-                <Tex tex={prediction.value.tex} /> ≈ <Num value={prediction.value.y} />
-              </p>
-            )}
-            {!prediction.ok && <p className="caption">{prediction.error}</p>}
-          </section>
+          {featureCount === 1 && (
+            <section className="predict">
+              <h3>Predict</h3>
+              <label className="inline-field">
+                New x{' '}
+                <input className="cell" value={xText} onChange={(e) => setXText(e.target.value)} aria-invalid={!x} />
+              </label>
+              {prediction.ok && prediction.value && (
+                <p>
+                  <Tex tex={prediction.value.tex} /> ≈ <Num value={prediction.value.y} />
+                </p>
+              )}
+              {!prediction.ok && <p className="caption">{prediction.error}</p>}
+            </section>
+          )}
         </Controls>
       }
     >

@@ -7,6 +7,12 @@ export function formatRational(value: Rational, mode: NumberDisplay, digits = 4)
   return text.replace('-', '−');
 }
 
+/** TeX for an exact value in the chosen mode: 2.25 or 9/4; non-terminating decimals are rounded. */
+export function rationalTex(value: Rational, mode: NumberDisplay, digits = 4): string {
+  if (mode === 'fraction' || value.isInteger()) return value.toTex();
+  return String(+value.toNumber().toFixed(digits));
+}
+
 /** F-D7: a number shown as a decimal or an exact fraction; the exact value is always on hover. */
 export function Num({ value, digits }: { value: Rational; digits?: number }) {
   const mode = useDataStore((s) => s.numberDisplay);

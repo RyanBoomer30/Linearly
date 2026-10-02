@@ -13,7 +13,7 @@ export interface AppState {
   uCells: string[];
   vCells: string[];
   presetId: string | null;
-  /** Active lesson (F-D2). Lives here so Lesson 2 can open Lesson 1 (L2-P6). */
+  /** Active lesson (F-D2). Lives here so Lesson 2 can open Lesson 1 (L2-I4, L2-L7). */
   lesson: number;
   view: ViewId;
   theme: ThemeSetting;

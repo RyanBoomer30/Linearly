@@ -19,7 +19,6 @@ import {
   parameterSpaceScene,
   polynomialView,
   predict,
-  pythonCode,
   snapPath,
   thetaControls,
   thetaFromHandles,
@@ -460,43 +459,5 @@ describe('§6.6 multi-variable and polynomial', () => {
 
   it('polynomial view needs exactly one feature', () => {
     expect(() => polynomialView(lessonData(TWO_FEATURES_DS, { kind: 'linear' }))).toThrow(RangeError);
-  });
-});
-
-// §6.7 Python (notes §2.4) -------------------------------------------------------------------
-
-describe('§6.7 Python', () => {
-  const quad = () => pythonCode(lessonData(QUADRATIC_DS, poly(2)), { matplotlib: false, lstsq: false });
-
-  it('mirrors the notes\' LeastSquares function (L2-X1)', () => {
-    const { solve } = quad();
-    expect(solve).toContain('import numpy as np');
-    expect(solve).toContain('def LeastSquares(A,b):');
-    expect(solve).toContain('np.linalg.solve(A.T @ A, A.T @ b)');
-    expect(solve).toContain('theta = LeastSquares(X,Y)');
-  });
-
-  it('quadratic: X and Y exactly as in the notes', () => {
-    const { solve } = quad();
-    expect(solve).toContain('X = np.array([[1,-1,1],[1,0,0],[1,1,1],[1,2,4]])');
-    expect(solve).toContain('Y = np.array([1,0,0,2])');
-  });
-
-  it('quadratic: the expected output comment reads theta = [-0.15 -0.45  0.75]', () => {
-    expect(quad().solve).toContain('# Least squares solution: theta = [-0.15 -0.45  0.75]');
-  });
-
-  it('houses: decimals are written as decimals, and the output matches NumPy', () => {
-    const { solve } = pythonCode(houses(LINE), { matplotlib: false, lstsq: false });
-    expect(solve).toContain('X = np.array([[1,1],[1,2.25],[1,1.5]])');
-    expect(solve).toMatch(/theta = \[2\.5\s+1\.57894737\]/);
-  });
-
-  it('optional snippets only when asked for (L2-X2, L2-X3)', () => {
-    expect(quad().matplotlib).toBeNull();
-    expect(quad().lstsq).toBeNull();
-    const all = pythonCode(lessonData(QUADRATIC_DS, poly(2)), { matplotlib: true, lstsq: true });
-    expect(all.matplotlib).toContain('matplotlib');
-    expect(all.lstsq).toContain('np.linalg.lstsq');
   });
 });

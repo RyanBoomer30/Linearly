@@ -1,5 +1,17 @@
-import { notImplemented } from './notImplemented';
-import type { ModelSpec } from './regression';
+import type { ModelSpec, ModelTerm } from './regression';
+
+const termFloat = (t: ModelTerm, x: number[]) =>
+  t.kind === 'intercept' ? 1 : t.powers.reduce((acc, p, k) => acc * x[k] ** p, 1);
+
+/** n evenly spaced values from a to b, hitting both ends exactly. */
+const linspace = (a: number, b: number, n: number) =>
+  Array.from({ length: n }, (_, i) => (n === 1 ? a : i === n - 1 ? b : a + ((b - a) * i) / (n - 1)));
+
+function gridOf(xs: number[], ys: number[], f: (x: number, y: number) => number): FloatGrid {
+  const values = ys.map((y) => xs.map((x) => f(x, y)));
+  const flat = values.flat();
+  return { xs, ys, values, min: Math.min(...flat), max: Math.max(...flat) };
+}
 
 /**
  * F-M15: float evaluation for drawing only. Nothing computed here ever feeds
@@ -8,12 +20,12 @@ import type { ModelSpec } from './regression';
 
 /** h(x) in floating point. */
 export function evaluateModelFloat(spec: ModelSpec, theta: number[], x: number[]): number {
-  return notImplemented('evaluateModelFloat');
+  return spec.terms.reduce((sum, t, j) => sum + theta[j] * termFloat(t, x), 0);
 }
 
 /** Points (x, h(x)) along [xMin, xMax] for <FunctionPlot>. One feature only. */
 export function sampleCurve(spec: ModelSpec, theta: number[], xMin: number, xMax: number, samples = 200): [number, number][] {
-  return notImplemented('sampleCurve');
+  return linspace(xMin, xMax, samples).map((x) => [x, evaluateModelFloat(spec, theta, [x])]);
 }
 
 /** A regular grid of values over a rectangle: values[i][j] at (xs[j], ys[i]). */
@@ -33,12 +45,17 @@ export function sampleSurface(
   x2Range: [number, number],
   resolution = 24,
 ): FloatGrid {
-  return notImplemented('sampleSurface');
+  return gridOf(linspace(...x1Range, resolution), linspace(...x2Range, resolution), (x1, x2) =>
+    evaluateModelFloat(spec, theta, [x1, x2]),
+  );
 }
 
 /** ‖Y − Xθ‖² in floats; recomputed every frame while θ is dragged (NF-7). */
 export function lossFloat(X: number[][], Y: number[], theta: number[]): number {
-  return notImplemented('lossFloat');
+  return X.reduce((sum, row, i) => {
+    const r = Y[i] - row.reduce((s, x, j) => s + x * theta[j], 0);
+    return sum + r * r;
+  }, 0);
 }
 
 /** Loss over a (θ₀, θ₁) grid for the landscape heatmap (L2-L3, F-C9). */
@@ -49,5 +66,7 @@ export function lossGrid(
   theta1Range: [number, number],
   resolution = 64,
 ): FloatGrid {
-  return notImplemented('lossGrid');
+  return gridOf(linspace(...theta0Range, resolution), linspace(...theta1Range, resolution), (t0, t1) =>
+    lossFloat(X, Y, [t0, t1]),
+  );
 }

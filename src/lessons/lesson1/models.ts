@@ -19,12 +19,13 @@ import {
   type Vector,
 } from '../../core/matrix';
 import { addVectors, dot, matMul, matVec, normFloat, outer, scaleVector, subVectors } from '../../core/products';
-import { decomposeColumnLeftNull, decomposeRowNull } from '../../core/projection';
-import { notImplemented } from '../../core/notImplemented';
+import { decomposeColumnLeftNull, decomposeRowNull, rowSpaceSolution } from '../../core/projection';
+import { describeDependency, diagnoseDependencies, leastSquares } from '../../core/leastSquares';
+import { notesRoundingNote } from '../../presets/notesFigures';
 import { Rational } from '../../core/rational';
 import { pivotColumns, rank, rrefAugmented, type AugmentedRrefResult } from '../../core/rref';
 import { evaluateSolution, solve, type SolutionSet } from '../../core/solve';
-import { fourSubspaces, inColumnSpace, type FourSubspaces } from '../../core/subspaces';
+import { columnSpaceBasis, fourSubspaces, inColumnSpace, type FourSubspaces } from '../../core/subspaces';
 import { columnColor, rowColor } from '../../theme/colors';
 
 // Formatting helpers ---------------------------------------------------------
@@ -39,6 +40,13 @@ const tuple = (v: Vector) => `(${v.map((x) => x.toString().replace('-', '−')).
 const tupleTex = (v: Vector) => `(${v.map((x) => x.toTex()).join(',')})`;
 const supDigits = (k: number) => String(k).replace(/\d/g, (d) => '⁰¹²³⁴⁵⁶⁷⁸⁹'[Number(d)]);
 const realSpace = (k: number) => `ℝ${supDigits(k)}`;
+const subDigits = (k: number) => String(k).replace(/\d/g, (d) => '₀₁₂₃₄₅₆₇₈₉'[Number(d)]);
+/** 2.25 rather than 9/4 when the decimal is exact, as the notes write it (L2-N2). */
+function decimalTex(r: Rational): string {
+  const text = String(r.toNumber());
+  const back = Rational.parse(text);
+  return back && back.equals(r) ? text : r.toTex();
+}
 
 /** Coefficient in front of a term, given whether it is the first term. */
 function termTex(c: Rational, body: string, first: boolean): string {
@@ -757,7 +765,48 @@ export interface ProjectionView {
  * it. `x` is the slider position (null = at x̂). Any m; draws when m ∈ {2, 3}.
  */
 export function projectionView(A: Matrix, b: Vector | null, x: number[] | null): ProjectionView {
-  return notImplemented('projectionView');
+  const { rows: m, cols: n } = shape(A);
+  const target = orZeros(b, m);
+  const ls = leastSquares(A, target);
+  // With dependent columns many x reach p; the sliders start at the one in the row space.
+  const best = toFloatVector(ls.xHat ?? rowSpaceSolution(A, ls.p)!);
+  const current = x && x.length === n ? x : best;
+
+  const weights = best.map((v, k) => {
+    const reach = Math.max(2, Math.abs(v));
+    return { tex: `x_${k + 1}`, value: current[k], min: Math.floor(v - reach), max: Math.ceil(v + reach), step: 0.01 };
+  });
+  const orthogonality = Array.from({ length: n }, (_, j) => ({
+    label: `a${j + 1}`,
+    tex: `a_${j + 1} \\cdot e`,
+    value: dot(getColumn(A, j), ls.e),
+  }));
+  const base = { weights, xHat: ls.xHat, p: ls.p, e: ls.e, orthogonality };
+
+  if (m !== 2 && m !== 3) {
+    return { ...base, scene: null, note: `b lives in ${realSpace(m)}, which can't be drawn; here are the numbers instead.` };
+  }
+  const Af = A.map((r) => toFloatVector(r));
+  const bF = toFloatVector(target);
+  const AxF = Af.map((r) => r.reduce((s, a, j) => s + a * current[j], 0));
+  const distance = Math.hypot(...bF.map((v, i) => v - AxF[i]));
+  const best_ = normFloat(ls.e);
+  const basis = columnSpaceBasis(A).map(f3);
+  return {
+    ...base,
+    note: null,
+    scene: {
+      dim: m,
+      span: { kind: basis.length <= 1 ? 'line' : 'plane', vectors: basis },
+      columns: Array.from({ length: n }, (_, j) => ({ to: f3(getColumn(A, j)), label: `a_${j + 1}`, color: columnColor(j) })),
+      b: f3(target),
+      p: f3(ls.p),
+      e: { from: f3(ls.p), to: f3(target) },
+      Ax: toVec3(AxF),
+      distance,
+      atOptimum: Math.abs(distance - best_) <= 1e-9 * Math.max(1, Math.hypot(...bF)),
+    },
+  };
 }
 
 // Normal equation (Lesson 2 notes §2.2–2.3) ----------------------------------------
@@ -802,11 +851,62 @@ export interface NormalEquationView {
 }
 
 export function normalEquationView(A: Matrix, b: Vector | null): NormalEquationView {
-  return notImplemented('normalEquationView');
+  const { rows: m, cols: n } = shape(A);
+  const target = orZeros(b, m);
+  const ls = leastSquares(A, target);
+  const diagnosis = diagnoseDependencies(A);
+  const labels = Array.from({ length: n }, (_, j) => `a${subDigits(j + 1)}`);
+  return {
+    derivation: [
+      { tex: 'e = b - A\\hat{x} \\perp C(A)', reason: 'The closest point p = Ax̂ leaves an error e perpendicular to every column of A.', highlight: 'e' },
+      { tex: 'A^T(b - A\\hat{x}) = 0', reason: 'Every column of A dotted with e is 0, so e is in N(Aᵀ).', highlight: 'orthogonal' },
+      { tex: 'A^TA\\hat{x} = A^Tb', reason: 'Distribute Aᵀ and move Aᵀb to the right: the normal equation.', highlight: 'normal' },
+    ],
+    AtA: ls.AtA,
+    Atb: ls.Atb,
+    trace: { ...ls.normalTrace, trace: { steps: ls.normalTrace.trace.steps.map((st, k) => (k === 0 ? { ...st, description: 'Start with [AᵀA | Aᵀb]' } : st)) } },
+    xHat: ls.xHat,
+    invertibility: {
+      rank: diagnosis.rank,
+      columns: n,
+      independent: diagnosis.independent,
+      theoremTex: 'A^TA \\text{ is invertible} \\iff A \\text{ has independent columns}',
+      explanation: diagnosis.independent
+        ? 'The columns are independent, so AᵀA is invertible and x̂ is unique.'
+        : 'The columns are dependent, so AᵀA is singular: every x with Ax = p is a best solution.',
+      dependencies: diagnosis.dependencies.map((d) => describeDependency(d, labels)),
+    },
+    proof: [
+      {
+        title: '⟹ If AᵀA is invertible, A has independent columns',
+        steps: [
+          { tex: 'Ax = 0', reason: 'Suppose a combination of the columns is zero.' },
+          { tex: '(A^TA)x = A^T(Ax) = 0', reason: 'Multiply both sides by Aᵀ.' },
+          { tex: 'x = 0', reason: 'AᵀA is invertible, so x = 0: the columns of A are independent.' },
+        ],
+      },
+      {
+        title: '⟸ If A has independent columns, AᵀA is invertible',
+        steps: [
+          { tex: '(A^TA)x = 0', reason: 'Suppose AᵀA sends x to zero.' },
+          { tex: 'x^T(A^TA)x = (Ax)^T(Ax) = \\|Ax\\|^2 = 0', reason: 'Multiply on the left by xᵀ.' },
+          { tex: 'Ax = 0', reason: 'Only the zero vector has length 0.' },
+          { tex: 'x = 0', reason: 'The columns of A are independent.' },
+          { tex: 'A^TA \\text{ is invertible}', reason: 'AᵀA is square and only x = 0 solves (AᵀA)x = 0.' },
+        ],
+      },
+    ],
+    roundingNote: notesRoundingNote(A, target, 'x̂'),
+  };
 }
 
 /** L2-N2: the dot product behind one entry, e.g. "(A^TA)_{12} = 1\cdot1 + 1\cdot2.25 + 1\cdot1.5 = 4.75". */
 export function entryDotProduct(A: Matrix, b: Vector | null, which: 'AtA' | 'Atb', i: number, j: number): string {
-  return notImplemented('entryDotProduct');
+  const target = orZeros(b, shape(A).rows);
+  const left = getColumn(A, i);
+  const right = which === 'AtA' ? getColumn(A, j) : target;
+  const name = which === 'AtA' ? `(A^TA)_{${i + 1}${j + 1}}` : `(A^Tb)_{${i + 1}}`;
+  const terms = left.map((a, k) => `${decimalTex(a)}\\cdot ${decimalTex(right[k])}`).join(' + ');
+  return `${name} = ${terms} = ${decimalTex(dot(left, right))}`;
 }
 

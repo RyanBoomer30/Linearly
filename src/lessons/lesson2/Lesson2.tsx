@@ -4,18 +4,16 @@ import { DataModelView } from './views/DataModelView';
 import { InconsistentSystemView } from './views/InconsistentSystemView';
 import { LossExplorerView } from './views/LossExplorerView';
 import { MultiVariableView } from './views/MultiVariableView';
-import { PythonView } from './views/PythonView';
 
 const VIEWS: { id: Lesson2ViewId; label: string; component: ComponentType }[] = [
   { id: 'data', label: 'Data & model', component: DataModelView },
   { id: 'inconsistent', label: 'Inconsistent system', component: InconsistentSystemView },
   { id: 'loss', label: 'Loss explorer', component: LossExplorerView },
   { id: 'multi', label: 'Multi-variable & polynomial', component: MultiVariableView },
-  { id: 'python', label: 'Python', component: PythonView },
 ];
 
 /**
- * Lesson 2: Data, Regression, and Machine Learning; Python. The matrix side of
+ * Lesson 2: Data, Regression, and Machine Learning. The matrix side of
  * least squares (projection onto C(A), the normal equation) lives in Lesson 1;
  * these views link there with X and Y as A and b.
  */

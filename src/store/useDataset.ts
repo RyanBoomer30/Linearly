@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { notImplemented } from '../core/notImplemented';
+import { Rational } from '../core/rational';
 import type { Dataset, VariableInfo } from '../core/regression';
 import { useDataStore } from './useDataStore';
 import { attempt, type Pending } from './useSystem';
@@ -17,7 +17,26 @@ export function parseDataset(
   cells: string[][],
   rowLabels: string[],
 ): ParsedDataset {
-  return notImplemented('parseDataset');
+  const invalid: [number, number][] = [];
+  // Invalid cells are flagged and read as 0 so the views keep drawing.
+  const cell = (text: string, row: number, col: number) => {
+    const r = Rational.parse(text);
+    if (r) return r;
+    invalid.push([row, col]);
+    return Rational.ZERO;
+  };
+  const featureCols = columns.map((_, j) => j).filter((j) => j !== targetCol);
+  const parsed = cells.map((row, i) => row.map((text, j) => cell(text, i, j)));
+  return {
+    dataset: {
+      features: featureCols.map((j) => columns[j]),
+      target: columns[targetCol],
+      inputs: parsed.map((row) => featureCols.map((j) => row[j])),
+      y: parsed.map((row) => row[targetCol]),
+      rowLabels,
+    },
+    invalid,
+  };
 }
 
 export function useDataset(): Pending<ParsedDataset> {

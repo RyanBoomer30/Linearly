@@ -1,7 +1,10 @@
-import type { Matrix, Vector } from './matrix';
-import { notImplemented } from './notImplemented';
-import type { Rational } from './rational';
-import type { AugmentedRrefResult } from './rref';
+import { crFactorization } from './factorization';
+import { shape, transpose, type Matrix, type Vector } from './matrix';
+import { dot, matMul, matVec, subVectors } from './products';
+import { projectOnto } from './projection';
+import { Rational } from './rational';
+import { rrefAugmented, type AugmentedRrefResult } from './rref';
+import { columnSpaceBasis } from './subspaces';
 
 /**
  * Least squares for any Ax = b (Lesson 1 projection and normal equation
@@ -29,17 +32,40 @@ export interface LeastSquaresResult {
 
 /** F-M13: exact least squares via the normal equation. Built on matMul, rref and projectOnto. */
 export function leastSquares(A: Matrix, b: Vector): LeastSquaresResult {
-  return notImplemented('leastSquares');
+  const { rows: m, cols: n } = shape(A);
+  if (b.length !== m) throw new RangeError('leastSquares: b must have one entry per row of A');
+  const At = transpose(A);
+  const AtA = matMul(At, A);
+  const Atb = matVec(At, b);
+  // The normal equation is always consistent; it has a unique solution exactly when AᵀA is invertible.
+  const normalTrace = rrefAugmented(AtA, Atb);
+  const xHat = normalTrace.pivotCols.length === n ? normalTrace.matrix.slice(0, n).map((r) => r[n]) : null;
+  // p is unique even when x̂ is not, so project directly.
+  const p = xHat ? matVec(A, xHat) : projectOnto(columnSpaceBasis(A), b);
+  const e = subVectors(b, p);
+  const rssValue = dot(e, e);
+  return {
+    AtA,
+    Atb,
+    xHat,
+    p,
+    e,
+    Ate: matVec(At, e),
+    rss: rssValue,
+    meanRss: m === 0 ? Rational.ZERO : rssValue.div(Rational.of(m)),
+    normalTrace,
+  };
 }
 
 /** b − Ax for any x, exactly. */
 export function residual(A: Matrix, b: Vector, x: Vector): Vector {
-  return notImplemented('residual');
+  return subVectors(b, matVec(A, x));
 }
 
 /** ‖b − Ax‖², exactly. */
 export function rss(A: Matrix, b: Vector, x: Vector): Rational {
-  return notImplemented('rss');
+  const e = residual(A, b, x);
+  return dot(e, e);
 }
 
 /** Column j of A equals Σ coeff · column (earlier pivot columns). */
@@ -57,10 +83,28 @@ export interface DependencyDiagnosis {
 
 /** F-M14: use CR to name each dependent column of A as a combination of earlier ones. */
 export function diagnoseDependencies(A: Matrix): DependencyDiagnosis {
-  return notImplemented('diagnoseDependencies');
+  const n = shape(A).cols;
+  const { R, pivotCols } = crFactorization(A);
+  const dependencies = Array.from({ length: n }, (_, j) => j)
+    .filter((j) => !pivotCols.includes(j))
+    .map((column) => ({
+      column,
+      // Column j of R holds the weights on the pivot columns (L1-CR3).
+      combination: pivotCols
+        .map((pc, i) => ({ column: pc, coeff: R[i][column] }))
+        .filter((c) => !c.coeff.isZero()),
+    }));
+  return { rank: pivotCols.length, independent: pivotCols.length === n, dependencies };
 }
 
 /** "bedrooms = 2 × living area", using the given column labels (a₁, a₂, … in Lesson 1). */
 export function describeDependency(dep: ColumnDependency, labels: string[]): string {
-  return notImplemented('describeDependency');
+  const term = (coeff: Rational, label: string) => (coeff.equals(Rational.ONE) ? label : `${coeff.toString()} × ${label}`);
+  const rhs = dep.combination
+    .map(({ column, coeff }, k) => {
+      const sign = coeff.isNegative() ? (k === 0 ? '−' : ' − ') : k === 0 ? '' : ' + ';
+      return sign + term(coeff.abs(), labels[column]);
+    })
+    .join('');
+  return `${labels[dep.column]} = ${rhs || '0'}`;
 }

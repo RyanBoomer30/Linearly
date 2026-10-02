@@ -18,10 +18,12 @@ interface Canvas2DProps {
   fit?: Vec3[];
   /** Skip the built-in grid and axes; data charts draw their own (F-C7). */
   bare?: boolean;
+  /** Axis names, e.g. ['θ₀', 'θ₁'] for parameter space; defaults to x₁, x₂. */
+  axisNames?: [string, string];
 }
 
 /** F-C1: orthographic camera, labeled axes, grid, pan and zoom (no rotation). */
-export function Canvas2D({ children, extent = 8, zoom = 40, fit, bare = false }: Canvas2DProps) {
+export function Canvas2D({ children, extent = 8, zoom = 40, fit, bare = false, axisNames }: Canvas2DProps) {
   const colors = useSceneColors();
   const labels = useRef<HTMLDivElement>(null);
   const fitRef = useRef<(() => void) | null>(null);
@@ -33,7 +35,7 @@ export function Canvas2D({ children, extent = 8, zoom = 40, fit, bare = false }:
         <OrbitControls makeDefault enableRotate={false} screenSpacePanning />
         {!bare && <GridLines extent={extent} color={colors.grid} />}
         <LabelLayerContext.Provider value={labels}>
-          {!bare && <Axes extent={extent} dims={2} color={colors.axis} labelColor={colors.text} />}
+          {!bare && <Axes extent={extent} dims={2} color={colors.axis} labelColor={colors.text} names={axisNames} />}
           {children}
         </LabelLayerContext.Provider>
         {fit && fit.length > 0 && <FitBridge points={fit} fitRef={fitRef} />}

@@ -259,17 +259,5 @@ select { background: var(--surface); border: 1px solid var(--border); border-rad
 .chip-check { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px; }
 .callout { border-left: 3px solid var(--accent); padding: 6px 12px; background: var(--surface); border-radius: 0 6px 6px 0; }
 
-.code-block { position: relative; margin: 0; }
-.code-block figcaption { font-weight: 600; margin-bottom: 4px; }
-.code-block pre {
-  margin: 0;
-  padding: 12px 14px;
-  overflow-x: auto;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font: 0.85rem/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-.code-copy { position: absolute; top: 28px; right: 8px; font-size: 0.8rem; }
 .num { font-variant-numeric: tabular-nums; }
 .legend { list-style: none; margin: 0; padding: 0; display: flex; gap: 16px; flex-wrap: wrap; font-weight: 600; }

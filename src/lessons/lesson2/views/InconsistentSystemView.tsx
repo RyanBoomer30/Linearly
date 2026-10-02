@@ -1,6 +1,7 @@
 import { Canvas2D } from '../../../components/canvas/Canvas2D';
 import { Point } from '../../../components/canvas/primitives';
 import { Caption } from '../../../components/display/Caption';
+import { rationalTex } from '../../../components/display/Num';
 import { MatrixTex } from '../../../components/display/MatrixTex';
 import { Tex } from '../../../components/display/Tex';
 import { ViewNotice } from '../../../components/display/ViewNotice';
@@ -21,6 +22,7 @@ import { Controls } from './Controls';
 export function InconsistentSystemView() {
   const view = useLessonData((d) => inconsistentSystemView(d));
   const openInLesson1 = useDataStore((s) => s.openInLesson1);
+  const numberDisplay = useDataStore((s) => s.numberDisplay);
   const data = useLessonDataRoot();
   const [linkError, setLinkError] = useState<string | null>(null);
   const open = (target: 'projection' | 'normal') => {
@@ -58,7 +60,7 @@ export function InconsistentSystemView() {
         {step && (
           <MatrixTex
             augmented
-            entries={step.matrix.map((r) => r.map((x) => x.toTex()))}
+            entries={step.matrix.map((r) => r.map((x) => rationalTex(x, numberDisplay)))}
             highlights={{
               rowBackgrounds: step.matrix.map((_, i) => (step.changedRows.includes(i) ? '#dbeafe' : undefined)),
               entryBackgrounds: Object.fromEntries(step.pivots.map((p) => [`${p.row},${p.col}`, PIVOT_COLOR])),
@@ -103,7 +105,7 @@ function ParameterSpace({ scene }: { scene: ParameterSpaceScene }) {
   if (scene.kind === 'none') return <ViewNotice error={scene.reason} />;
   if (scene.kind === 'numberLine') return <NumberLine scene={scene} />;
   return (
-    <Canvas2D fit={[...rowPictureFit(scene.rowPicture), ...scene.intersections, scene.thetaStar]}>
+    <Canvas2D fit={[...rowPictureFit(scene.rowPicture), ...scene.intersections, scene.thetaStar]} axisNames={['θ₀', 'θ₁']}>
       <RowPictureContents scene={scene.rowPicture} markerColor={colors.result} />
       {scene.intersections.map((p, i) => (
         <Point key={i} position={p} color={colors.axis} radius={0.08} />

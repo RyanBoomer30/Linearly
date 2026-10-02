@@ -7,6 +7,8 @@ interface AxesProps {
   dims: 2 | 3;
   color: string;
   labelColor: string;
+  /** Axis names; defaults to x₁, x₂, x₃. */
+  names?: string[];
 }
 
 const AXES: { name: string; dir: Vec3 }[] = [
@@ -15,10 +17,11 @@ const AXES: { name: string; dir: Vec3 }[] = [
   { name: 'x₃', dir: [0, 0, 1] },
 ];
 
-export function Axes({ extent, dims, color, labelColor }: AxesProps) {
+export function Axes({ extent, dims, color, labelColor, names }: AxesProps) {
   return (
     <group>
-      {AXES.slice(0, dims).map(({ name, dir }) => {
+      {AXES.slice(0, dims).map(({ name: fallback, dir }, k) => {
+        const name = names?.[k] ?? fallback;
         const end = dir.map((d) => d * extent) as Vec3;
         const start = dir.map((d) => -d * extent) as Vec3;
         const labelAt = dir.map((d) => d * (extent + 0.5)) as Vec3;

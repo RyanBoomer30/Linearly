@@ -2,7 +2,7 @@ import { Tex } from '../../../components/display/Tex';
 import { useDataStore } from '../../../store/useDataStore';
 import type { ThetaControls } from '../models';
 
-/** θ sliders shared by the projection and loss views (L2-P2, L2-L1). θ is shared through the store (L2-P4). */
+/** θ sliders for the loss view (L2-L1). θ is shared through the store, so every Lesson 2 view draws the same model. */
 export function ThetaSliders({ controls }: { controls: ThetaControls }) {
   const setTheta = useDataStore((s) => s.setTheta);
   const values = controls.params.map((p) => p.value);
