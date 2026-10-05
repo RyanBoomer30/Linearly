@@ -1,10 +1,14 @@
 import { create } from 'zustand';
+import { checkStochastic, normalizeColumn as normalizeMatrixColumn, simulatePath } from '../core/markov';
 import type { Matrix, Vector } from '../core/matrix';
-import { notImplemented } from '../core/notImplemented';
+import { newSeed as freshSeed } from '../core/random';
+import { Rational } from '../core/rational';
 import type { VectorScaling } from '../core/scaling';
 import type { ViewId } from '../presets';
 import { DEFAULT_SEED, DEFAULT_SURFERS, lesson5PresetById, NOTES_SEQUENCE, type Lesson5Preset } from '../presets/lesson5';
-import type { NumberDisplay } from './useDataStore';
+import { editorText, type NumberDisplay } from './useDataStore';
+import { parseLesson5 } from './parseLesson5';
+import { useStore } from './useStore';
 
 export type Lesson5ViewId = 'chain' | 'evolution' | 'estimate' | 'eigen' | 'components' | 'layers' | 'perron';
 
@@ -105,6 +109,12 @@ const presetState = (p: Lesson5Preset) => ({
   notice: null,
 });
 
+const MIN_STATES = 2;
+const MAX_STATES = 4;
+
+/** The name for a new state, following the existing names ("Page 4" after pages, otherwise "State 4"). */
+const nameFor = (names: string[], i: number) => (names.length > 0 && names.every((n) => n.startsWith('Page')) ? `Page ${i + 1}` : `State ${i + 1}`);
+
 const replaceAt = <T,>(arr: T[], i: number, value: T) => arr.map((x, k) => (k === i ? value : x));
 const setGridCell = (grid: string[][], row: number, col: number, value: string) => replaceAt(grid, row, replaceAt(grid[row], col, value));
 
@@ -128,12 +138,61 @@ export const useLesson5Store = create<Lesson5State>((set) => ({
   setEdge: (from, to, value) => set((s) => ({ pCells: setGridCell(s.pCells, to, from, value), presetId: null })),
   setX0Cell: (i, value) => set((s) => ({ x0Cells: replaceAt(s.x0Cells, i, value) })),
   setPureState: (i) => set((s) => ({ x0Cells: s.x0Cells.map((_, k) => (k === i ? '1' : '0')) })),
-  setX0FromSimplex: () => notImplemented('setX0FromSimplex'),
-  addState: () => notImplemented('addState'),
-  removeState: () => notImplemented('removeState'),
+  setX0FromSimplex: (p) =>
+    set(() => {
+      // Three decimals is plenty for a drag; the last entry takes up the rounding so x₀ sums to exactly 1.
+      const rounded = p.map((x) => Rational.of(Math.round(Math.max(0, x) * 1000), 1000));
+      const head = rounded.slice(0, -1);
+      let last = Rational.ONE.sub(head.reduce((s, x) => s.add(x), Rational.ZERO));
+      if (last.isNegative()) {
+        const big = head.reduce((b, x, i) => (x.cmp(head[b]) > 0 ? i : b), 0);
+        head[big] = head[big].add(last);
+        last = Rational.ZERO;
+      }
+      return { x0Cells: [...head, last].map(editorText) };
+    }),
+  addState: () =>
+    set((s) => {
+      const n = s.pCells.length;
+      if (n >= MAX_STATES) return s;
+      return {
+        pCells: [...s.pCells.map((r) => [...r, '0']), [...s.pCells.map(() => '0'), '1']],
+        x0Cells: [...s.x0Cells, '0'],
+        stateNames: [...s.stateNames, nameFor(s.stateNames, n)],
+        positions: null,
+        practiceCells: Array.from({ length: n + 1 }, () => new Array<string>(n + 1).fill('')),
+        presetId: null,
+        selectedState: null,
+      };
+    }),
+  removeState: (i) =>
+    set((s) => {
+      const n = s.pCells.length;
+      if (n <= MIN_STATES || i < 0 || i >= n) return s;
+      const drop = <T,>(arr: T[]) => arr.filter((_, k) => k !== i);
+      return {
+        pCells: drop(s.pCells).map(drop),
+        x0Cells: drop(s.x0Cells),
+        stateNames: drop(s.stateNames),
+        positions: s.positions ? drop(s.positions) : null,
+        practiceCells: Array.from({ length: n - 1 }, () => new Array<string>(n - 1).fill('')),
+        presetId: null,
+        selectedState: null,
+      };
+    }),
   setPositions: (positions) => set({ positions }),
   setStateName: (i, name) => set((s) => ({ stateNames: replaceAt(s.stateNames, i, name) })),
-  normalizeColumn: () => notImplemented('normalizeColumn'),
+  normalizeColumn: (j) =>
+    set((s) => {
+      const { P, invalid } = parseLesson5(s.pCells, s.x0Cells);
+      if (invalid.P.some(([, col]) => col === j)) return { notice: `Column ${j + 1} has cells that don't parse; fix them first.` };
+      try {
+        const N = normalizeMatrixColumn(P, j);
+        return { pCells: s.pCells.map((r, i) => r.map((c, k) => (k === j ? N[i][j].toString() : c))), presetId: null, notice: null };
+      } catch (e) {
+        return { notice: e instanceof Error ? e.message : String(e) };
+      }
+    }),
   loadPreset: (id) => {
     const p = lesson5PresetById(id);
     if (p) set(presetState(p));
@@ -146,14 +205,48 @@ export const useLesson5Store = create<Lesson5State>((set) => ({
   setNumberDisplay: (numberDisplay) => set({ numberDisplay }),
   setLogScale: (logScale) => set({ logScale }),
   setSurfers: (surfers) => set({ surfers }),
-  newSeed: () => notImplemented('newSeed'),
+  newSeed: () =>
+    set((s) => {
+      let seed = freshSeed();
+      while (seed === s.seed) seed = freshSeed();
+      return { seed };
+    }),
   setSequenceText: (sequenceText) => set({ sequenceText, sequenceSource: 'pasted', practiceRevealed: false }),
   setSequenceLength: (sequenceLength) => set({ sequenceLength }),
-  simulateSequence: () => notImplemented('simulateSequence'),
+  simulateSequence: () =>
+    set((s) => {
+      const { P, x0, invalid } = parseLesson5(s.pCells, s.x0Cells);
+      if (invalid.P.length > 0 || !checkStochastic(P).valid) return { notice: 'P is not a valid transition matrix, so the chain cannot be simulated. Fix it in the chain editor first.' };
+      // Start in x₀'s most likely state.
+      const start = x0.reduce((b, x, i) => (x.cmp(x0[b]) > 0 ? i : b), 0);
+      const path = simulatePath(P, start, s.sequenceLength, s.seed);
+      return { sequenceText: path.map((k) => k + 1).join(''), sequenceSource: 'simulated', practiceRevealed: true, notice: null };
+    }),
   setPracticeCell: (row, col, value) => set((s) => ({ practiceCells: setGridCell(s.practiceCells, row, col, value) })),
   revealPractice: () => set({ practiceRevealed: true }),
-  useEstimate: () => notImplemented('useEstimate'),
+  useEstimate: (estimate) =>
+    set((s) => {
+      const n = estimate.length;
+      const sameSize = n === s.pCells.length;
+      return {
+        pCells: estimate.map((r) => r.map((x) => x.toString())),
+        x0Cells: sameSize ? s.x0Cells : Array.from({ length: n }, (_, i) => (i === 0 ? '1' : '0')),
+        stateNames: sameSize ? s.stateNames : Array.from({ length: n }, (_, i) => s.stateNames[i] ?? nameFor(s.stateNames, i)),
+        positions: sameSize ? s.positions : null,
+        presetId: null,
+        selectedState: null,
+        notice: 'P̂ is now the chain, in every Lesson 5 view.',
+      };
+    }),
   setProbe: (probe) => set({ probe }),
-  openInLesson1: () => notImplemented('openInLesson1'),
+  openInLesson1: (A, b, view) =>
+    useStore.setState({
+      aCells: A.map((r) => r.map((x) => x.toString())),
+      bCells: b.map((x) => x.toString()),
+      presetId: null,
+      view,
+      lesson: 1,
+      notice: null,
+    }),
   dismissNotice: () => set({ notice: null }),
 }));

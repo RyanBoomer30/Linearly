@@ -44,7 +44,7 @@ export function BarChart({ bars, overlay, overlayLabel, max = 1, caption }: BarC
           return (
             <g key={b.label}>
               <rect x={x} y={y(b.value)} width={barW} height={Math.max(0, y(0) - y(b.value))} fill={b.color} opacity={0.85} />
-              <text x={x + barW / 2} y={y(b.value) - 6} textAnchor="middle" className="bar-value">
+              <text x={x + barW / 2} y={y(Math.max(b.value, overlay?.[i] ?? 0)) - 6} textAnchor="middle" className="bar-value">
                 {b.valueLabel ?? b.value.toFixed(3)}
               </text>
               <text x={x + barW / 2} y={HEIGHT - PAD.bottom + 16} textAnchor="middle" fill={b.color} className="bar-label">

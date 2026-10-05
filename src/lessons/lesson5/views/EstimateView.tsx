@@ -98,7 +98,7 @@ export function EstimateView() {
             <textarea value={sequenceText} onChange={(e) => setSequenceText(e.target.value)} rows={4} spellCheck={false} />
           </label>
           {parsed.ok && parsed.value.invalid.length > 0 && (
-            <p className="solution-msg warn">Not states 1 … {n}: {parsed.value.invalid.join(', ')}</p>
+            <p className="solution-msg warn">Not states 1 … {n}: {[...new Set(parsed.value.invalid)].join(', ')}</p>
           )}
           {!parsed.ok && <ViewNotice error={parsed.error} />}
           <fieldset>

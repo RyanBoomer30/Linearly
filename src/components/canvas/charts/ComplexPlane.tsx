@@ -58,7 +58,7 @@ export function ComplexPlane({ points, circles = [] }: { points: ComplexPoint[];
         <group key={k}>
           <Point position={at(p.z)} color={p.color} radius={p.highlighted ? 0.16 : 0.11} />
           {p.label && (
-            <Label position={[at(p.z)[0] + 0.3, at(p.z)[1] + 0.3, 0]} color={p.color}>
+            <Label position={[at(p.z)[0] + 0.15, at(p.z)[1] + (k % 2 === 0 ? 0.35 : -0.45), 0]} color={p.color}>
               {p.label}
             </Label>
           )}

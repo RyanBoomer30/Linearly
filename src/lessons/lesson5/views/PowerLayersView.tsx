@@ -14,7 +14,7 @@ import { powerLayersTrace, powerLayersView } from '../models';
 import { useLesson5 } from '../useLesson5';
 import { CheckList, Controls } from './Controls';
 
-const round = (M: number[][]) => M.map((r) => r.map((x) => (Math.abs(x) < 5e-4 ? '0' : x.toFixed(3))));
+const round = (M: number[][]) => M.map((r) => r.map((x) => (Math.abs(x) < 5e-3 ? '0' : x.toFixed(2))));
 
 /** §9.6: the Lesson 3 layer stack (§7.2) with the eigendecomposition as its factorization. */
 export function PowerLayersView() {
@@ -68,7 +68,7 @@ export function PowerLayersView() {
                 </div>
               ))}
               <div className="layer kept">
-                <MatrixHeatmap entries={view.value.total} maxAbs={view.value.maxAbs} labels={round(view.value.total)} caption={`P^${t}`} />
+                <MatrixHeatmap entries={view.value.total} maxAbs={view.value.maxAbs} labels={round(view.value.total)} caption={`Pᵗ at t = ${t}`} />
               </div>
             </div>
           </section>
@@ -95,10 +95,11 @@ export function PowerLayersView() {
         <h3>
           Step by step: <Tex tex="(V\Lambda^t)\,V^{-1}" />, columns × rows
         </h3>
-        {!trace.ok && <ViewNotice error={trace.error} />}
+        {!trace.ok && view.ok && <ViewNotice error={trace.error} />}
         {trace.ok && step && (
           <>
             <StepperControls stepper={stepper} description={step.description} tex={step.tex} />
+            <p className="caption">{step.layer === null ? 'VΛᵗ:' : `Sum of the first ${step.layer + 1} layer${step.layer === 0 ? '' : 's'}:`}</p>
             <AnyMatrixTex M={step.matrix} />
           </>
         )}

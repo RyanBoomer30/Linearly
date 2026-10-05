@@ -48,11 +48,12 @@ export function PerronView() {
           <section>
             <h3>Eigenvalues and the unit circle</h3>
             <ComplexPlane points={view.value.points} circles={view.value.circles} />
-            {view.value.lambda2Abs !== null && (
-              <p>
-                |λ₂| ≈ {view.value.lambda2Abs.toPrecision(4)}: the distance to x_eq shrinks by about this factor each step.
-              </p>
-            )}
+            {view.value.lambda2Abs !== null &&
+              (view.value.lambda2Abs < 1 - 1e-9 ? (
+                <p>|λ₂| ≈ {view.value.lambda2Abs.toPrecision(4)}: the distance to x_eq shrinks by about this factor each step.</p>
+              ) : (
+                <p>|λ₂| = 1: another eigenvalue sits on the unit circle, so that component never shrinks.</p>
+              ))}
           </section>
           <section>
             <h3>Is P regular?</h3>
@@ -62,7 +63,7 @@ export function PerronView() {
                 entries={view.value.powerHeatmap.entries}
                 maxAbs={1}
                 labels={view.value.powerHeatmap.entries.map((r) => r.map((x) => (x === 0 ? '0' : x.toFixed(2))))}
-                caption={`P^${view.value.powerHeatmap.k}`}
+                caption={`Pᵏ at k = ${view.value.powerHeatmap.k}`}
               />
             )}
           </section>

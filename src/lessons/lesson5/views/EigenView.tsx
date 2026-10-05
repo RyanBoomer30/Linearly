@@ -1,8 +1,9 @@
 import { Canvas3D } from '../../../components/canvas/Canvas3D';
 import { Arrow, DragHandle, Label, ParametricLine } from '../../../components/canvas/primitives';
-import { AnyMatrixTex } from '../../../components/display/AnyMatrixTex';
+import { AnyMatrixTex, anyMatrixEntries } from '../../../components/display/AnyMatrixTex';
 import { Caption } from '../../../components/display/Caption';
 import { CodeBlock } from '../../../components/display/CodeBlock';
+import { MatrixTex } from '../../../components/display/MatrixTex';
 import { PrecisionBadge } from '../../../components/display/PrecisionBadge';
 import { Tex } from '../../../components/display/Tex';
 import { ViewNotice } from '../../../components/display/ViewNotice';
@@ -101,7 +102,8 @@ export function EigenView() {
                 <div className="matrix-pair">
                   <Tex tex="P =" />
                   <AnyMatrixTex M={view.value.decomposition.V} />
-                  <AnyMatrixTex M={view.value.decomposition.Lambda} />
+                  {/* Diagonal: written entry by entry, not as (1/d)[…]. */}
+                  <MatrixTex entries={anyMatrixEntries(view.value.decomposition.Lambda, 4)} />
                   <AnyMatrixTex M={view.value.decomposition.Vinv} />
                 </div>
                 <CheckList checks={[view.value.decomposition.check]} />
@@ -127,7 +129,7 @@ export function EigenView() {
         {scene.ok && !scene.value && <p className="caption">The ℝ³ picture needs 3 states.</p>}
         {scene.ok && scene.value && (
           <>
-            <Canvas3D fit={[scene.value.probe, scene.value.image]}>
+            <Canvas3D fit={[scene.value.probe, scene.value.image, ...scene.value.lines.map((l) => l.dir)]}>
               {scene.value.lines.map((l) => (
                 <group key={l.label}>
                   <ParametricLine point={[0, 0, 0]} dir={l.dir} color={l.color} lineWidth={2} />

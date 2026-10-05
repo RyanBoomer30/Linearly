@@ -16,6 +16,10 @@ import { componentsChart, componentsScene, componentsView } from '../models';
 import { useLesson5 } from '../useLesson5';
 import { CheckList, Controls } from './Controls';
 
+/** Probability vectors are shorter than 1; the ℝ³ scene is drawn this many times larger. */
+const SCENE_SCALE = 5;
+const big = (p: [number, number, number]): [number, number, number] => [p[0] * SCENE_SCALE, p[1] * SCENE_SCALE, p[2] * SCENE_SCALE];
+
 /** §9.5 */
 export function ComponentsView() {
   const { t, setT, logScale, setLogScale } = useLesson5Store();
@@ -77,7 +81,7 @@ export function ComponentsView() {
       )}
       <section>
         <h3>Size of each component against t</h3>
-        {!chart.ok && <ViewNotice error={chart.error} />}
+        {!chart.ok && view.ok && <ViewNotice error={chart.error} />}
         {chart.ok && (
           <>
             <Canvas2D bare fit={chartFit(chart.value.frame)}>
@@ -102,19 +106,22 @@ export function ComponentsView() {
       </section>
       <section>
         <h3>Tip to tail in ℝ³</h3>
-        {!scene.ok && <ViewNotice error={scene.error} />}
+        {!scene.ok && view.ok && <ViewNotice error={scene.error} />}
         {scene.ok && !scene.value && <p className="caption">The ℝ³ picture needs 3 states.</p>}
         {scene.ok && scene.value && (
-          <Canvas3D fit={[scene.value.total, ...scene.value.arrows.map((a) => a.to)]}>
-            {scene.value.arrows.map((a) => (
-              <group key={a.label}>
-                <Arrow from={a.from} to={a.to} color={a.color} />
-                <Label position={a.to} tex={a.label} color={a.color} />
-              </group>
-            ))}
-            <Point position={scene.value.total} color={colors.result} />
-            <Label position={scene.value.total} tex={`x(${t})`} color={colors.result} />
-          </Canvas3D>
+          <>
+            <Canvas3D fit={[big(scene.value.total), ...scene.value.arrows.map((a) => big(a.to))]} extent={5}>
+              {scene.value.arrows.map((a) => (
+                <group key={a.label}>
+                  <Arrow from={big(a.from)} to={big(a.to)} color={a.color} />
+                  <Label position={big(a.to)} tex={a.label} color={a.color} />
+                </group>
+              ))}
+              <Point position={big(scene.value.total)} color={colors.result} />
+              <Label position={big(scene.value.total)} tex={`x(${t})`} color={colors.result} />
+            </Canvas3D>
+            <p className="caption">Drawn {SCENE_SCALE}× larger. As t grows the last two arrows shrink until only c₁v₁ = x_eq is left.</p>
+          </>
         )}
       </section>
     </ModuleLayout>
