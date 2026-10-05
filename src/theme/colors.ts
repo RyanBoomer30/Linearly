@@ -73,3 +73,8 @@ export const stateColor = (i: number) => STATE_COLORS[i % STATE_COLORS.length];
 /** Eigen-components c_i λ_i^t v_i (L5-CO3/CO4) and their layers (L5-RK1). */
 export const EIGEN_COLORS = ['#0072B2', '#D55E00', '#009E73', '#CC79A7'] as const;
 export const eigenColor = (i: number) => EIGEN_COLORS[i % EIGEN_COLORS.length];
+
+/** Lesson 6: the robot (⌘), walls, and the path trace. Values use divergingColor on the fixed scale −1 … +1. */
+export const ROBOT_COLOR = '#E69F00';
+export const WALL_COLOR = '#a1a1aa';
+export const PATH_COLOR = '#CC79A7';

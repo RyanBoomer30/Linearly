@@ -272,3 +272,93 @@ export const rowSigns = (M: string[][]) => {
   const t = (X: string[][]) => X[0].map((_, j) => X.map((r) => r[j]));
   return t(columnSigns(t(M)));
 };
+
+// Section 14.6 test fixtures (Lesson 6 notes) ------------------------------------
+
+/** Notes §6.1: 3 × 4 grid, wall at (1, 1), +1 at state 4, −1 at state 7, robot at state 10. Cells are [row, col]. */
+export const NOTES_GRID = {
+  rows: 3,
+  cols: 4,
+  walls: [[1, 1]] as [number, number][],
+  rewards: [
+    { cell: [0, 3] as [number, number], reward: 1 },
+    { cell: [1, 3] as [number, number], reward: -1 },
+  ],
+  terminals: [
+    [0, 3],
+    [1, 3],
+  ] as [number, number][],
+  start: [2, 2] as [number, number],
+};
+
+/** A 1 × 3 corridor with +1 at the right end (terminal), robot at the left. */
+export const CORRIDOR = {
+  rows: 1,
+  cols: 3,
+  walls: [] as [number, number][],
+  rewards: [{ cell: [0, 2] as [number, number], reward: 1 }],
+  terminals: [[0, 2]] as [number, number][],
+  start: [0, 0] as [number, number],
+};
+
+/** A grid fixture as a GridSpec, with slip q and an optional living reward. */
+export const gridSpec = (g: typeof NOTES_GRID | typeof CORRIDOR, slip: string | number = '1/10', livingReward?: string | number) => ({
+  rows: g.rows,
+  cols: g.cols,
+  walls: g.walls,
+  rewards: g.rewards.map((r) => ({ cell: r.cell, reward: q(r.reward) })),
+  terminals: g.terminals,
+  start: g.start,
+  slip: q(slip),
+  ...(livingReward === undefined ? {} : { livingReward: q(livingReward) }),
+});
+
+/** 0-based state index of a notes state number. */
+export const st = (label: number) => label - 1;
+
+/** The notes' route: π* for q = 1/10, γ = 9/10, by state number (terminals 4 and 7 omitted). */
+export const NOTES_PI_STAR: Record<number, 'up' | 'right' | 'down' | 'left'> = {
+  1: 'right',
+  2: 'right',
+  3: 'right',
+  5: 'up',
+  6: 'up',
+  8: 'up',
+  9: 'left',
+  10: 'up',
+  11: 'left',
+};
+
+// Section 15.7 test fixtures (Lesson 7 notes) ------------------------------------
+
+/** Notes §7.0: the 2 × 3 SVD example; σ = √3, 1. */
+export const SVD_EXAMPLE = [
+  [0, 1, 1],
+  [1, 1, 0],
+];
+/** 2 × the exact layers σ₁u₁v₁ᵀ and σ₂u₂v₂ᵀ. */
+export const SVD_EXAMPLE_LAYERS_2 = [
+  [
+    [1, 2, 1],
+    [1, 2, 1],
+  ],
+  [
+    [-1, 0, 1],
+    [1, 0, -1],
+  ],
+];
+
+/** Notes §7.1: centered age x₁ and height x₂ for six people. */
+export const AGE_HEIGHT = [
+  [3, 7],
+  [-4, -6],
+  [7, 8],
+  [1, -1],
+  [-4, -1],
+  [-3, -7],
+];
+/** Illustrative weights (not in the notes), for the regression on components (L7-D4). */
+export const WEIGHTS = [70, 48, 80, 58, 52, 44];
+/** v₁ and v₂ to the notes' 4 digits, after the sign setting. */
+export const NOTES_V1 = [0.5606, 0.8281];
+export const NOTES_V2 = [0.8281, -0.5606];

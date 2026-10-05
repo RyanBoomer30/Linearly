@@ -338,3 +338,67 @@ select { background: var(--surface); border: 1px solid var(--border); border-rad
 .practice-wrong .practice-mark, .practice-invalid .practice-mark { color: #cc3311; }
 .component-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
 .lesson-summary { margin-top: 16px; font-style: italic; }
+
+/* Lesson 6 ---------------------------------------------------------------------- */
+.grid-layout { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+.gridworld { margin: 0; }
+.gridworld svg { width: 100%; height: auto; user-select: none; }
+.gridworld figcaption { color: var(--muted); font-size: 0.85rem; max-width: 420px; }
+.grid-cell { cursor: pointer; }
+.grid-cell:focus-visible rect:first-child { stroke: var(--accent); stroke-width: 2; }
+.grid-label { font-size: 11px; fill: var(--muted); }
+.grid-reward { font-size: 14px; font-weight: 700; fill: var(--text); }
+.grid-value { font-size: 11px; fill: var(--text); font-weight: 600; }
+.grid-q { font-size: 9px; fill: var(--text); }
+.grid-robot { font-size: 18px; font-weight: 700; }
+.grid-arrow { fill: var(--text); opacity: 0.75; }
+.grid-arrow.changed { fill: #D55E00; opacity: 1; stroke: var(--text); stroke-width: 1; }
+.mdp-summary { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.transition-list { display: flex; gap: 16px; flex-wrap: wrap; list-style: none; padding: 0; }
+.policy-painter, .grid-editor { display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border); border-radius: 6px; padding: 8px; }
+label.invalid input { border-color: #cc3311; }
+.experience-table { max-width: 280px; font-size: 0.85rem; }
+.derivation ol { padding-left: 20px; }
+.derivation li.current { background: color-mix(in srgb, var(--accent) 10%, transparent); border-radius: 4px; }
+.compass { display: grid; grid-template-areas: '. up .' 'left . right' '. down .'; gap: 6px; width: fit-content; font-weight: 600; }
+.compass > div { padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; text-align: center; }
+.compass .best { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 15%, transparent); }
+.compass-up { grid-area: up; } .compass-down { grid-area: down; } .compass-left { grid-area: left; } .compass-right { grid-area: right; }
+.history-strip { display: flex; gap: 10px; flex-wrap: wrap; }
+.history-item { display: flex; flex-direction: column; align-items: center; width: 120px; }
+.q-card { border: 1px solid var(--border); border-radius: 8px; padding: 12px; max-width: 640px; }
+/* The notes' §6.1 figure style, and the robot simulation. */
+.gridworld.notes .grid-label-center, .gridworld.notes .grid-reward-center { font-family: 'Cambria Math', Cambria, 'Times New Roman', Times, serif; font-variant-numeric: lining-nums; fill: var(--text); }
+.grid-label-center { font-size: 28px; fill: var(--text); }
+.grid-reward-center { font-size: 26px; font-weight: 700; fill: var(--text); }
+.grid-robot-layer { transition: transform 0.45s ease-in-out; pointer-events: none; }
+.grid-robot-big { font-size: 34px; }
+.grid-robot-tag { font-size: 11px; fill: #D55E00; font-weight: 700; }
+.grid-robot-aimed rect { fill: none; stroke: #D55E00; stroke-width: 2; stroke-dasharray: 5 4; }
+.grid-robot-aimed text { font-size: 28px; fill: #D55E00; opacity: 0.35; }
+@media (prefers-reduced-motion: reduce) { .grid-robot-layer { transition: none; } }
+.robot-sim { display: flex; flex-direction: column; gap: 10px; }
+.robot-sim-panels { display: flex; gap: 32px; flex-wrap: wrap; align-items: flex-start; }
+.robot-sim-panels .gridworld { flex: 0 1 340px; }
+.robot-sim-step { font-weight: 600; min-height: 1.5em; }
+.robot-sim-tally { display: flex; gap: 16px; flex-wrap: wrap; }
+
+/* Lesson 7 ---------------------------------------------------------------------- */
+.image-view { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.image-view-frame { overflow: auto; border: 1px solid var(--border); background: var(--surface); }
+.image-view-frame canvas { display: block; }
+.image-view-tools { display: flex; gap: 6px; align-items: center; }
+.image-view figcaption { color: var(--muted); font-size: 0.85rem; }
+.image-grid { display: flex; gap: 10px; flex-wrap: wrap; }
+.image-pair { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+.scatter-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.svd-factors { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+.svd-factor { margin: 0; display: flex; flex-direction: column; align-items: center; }
+.svd-factor figcaption { color: var(--muted); font-size: 0.85rem; }
+.svd-progress { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.storage-readout { font-weight: 600; }
+.file-button { position: relative; display: inline-flex; align-items: center; padding: 4px 10px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; background: var(--surface); }
+.file-button input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.pca-table .derived { font-style: italic; background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.product-list { columns: 2; font-family: ui-monospace, monospace; font-size: 0.85rem; }
+.match-list { margin: 0; padding-left: 20px; font-weight: 600; }

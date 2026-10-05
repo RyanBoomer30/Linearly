@@ -10,10 +10,11 @@ export const LESSONS: LessonInfo[] = [
   { id: 3, title: 'Rank-1 and LU', available: true },
   { id: 4, title: 'Householder QR', available: true },
   { id: 5, title: 'Markov Chains', available: true },
-  { id: 6, title: 'MDPs', available: false },
+  { id: 6, title: 'MDPs', available: true },
+  { id: 7, title: 'SVD, Compression, PCA', available: true },
 ];
 
-/** F-D2: Lessons 1–5 are active in Phase 5; later lessons are "coming soon." */
+/** F-D2: Lessons 1–7 are active in Phase 7; later lessons are "coming soon." */
 export function LessonNav({ active, onSelect }: { active: number; onSelect: (id: number) => void }) {
   return (
     <nav className="lesson-nav" aria-label="Lessons">

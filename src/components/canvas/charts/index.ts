@@ -10,3 +10,4 @@ export { Segment } from './Segment';
 export { SlopeLine } from './SlopeLine';
 export { SurfacePlot } from './SurfacePlot';
 export { contourLevels, contourSegments, logTicks, niceTicks } from './ticks';
+export { Ellipse } from './Ellipse';
