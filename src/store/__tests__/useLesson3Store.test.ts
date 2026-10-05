@@ -75,6 +75,79 @@ describe('Lesson 3 store (§8)', () => {
   });
 });
 
+describe('solving from L and U (L3-S6)', () => {
+  it('starts on "factor A", with L and U already filled from the LU example', () => {
+    expect(s().solveInput).toBe('A');
+    expect(s().lCells).toEqual([
+      ['1', '0', '0'],
+      ['2', '1', '0'],
+      ['-1', '5', '1'],
+    ]);
+    expect(s().uCells).toEqual([
+      ['1', '2', '2'],
+      ['0', '2', '1'],
+      ['0', '0', '4'],
+    ]);
+  });
+
+  it('loading a preset refactors L and U (housing XᵀX: L = [[1,0],[19/12,1]], U = [[3,19/4],[0,19/24]])', () => {
+    s().loadPreset('housingYears');
+    expect(s().lCells).toEqual([
+      ['1', '0'],
+      ['19/12', '1'],
+    ]);
+    expect(s().uCells).toEqual([
+      ['3', '4.75'],
+      ['0', '19/24'],
+    ]);
+  });
+
+  it('a matrix that needs row exchanges falls back to partial pivoting', () => {
+    s().setPivoting('none');
+    s().loadPreset('paluExample');
+    s().setPivoting('none');
+    s().fillFactorsFromA();
+    expect(s().uCells[0]).toEqual(['2', '4', '2']);
+    expect(s().notice).toMatch(/PA = LU/);
+  });
+
+  it('resizing keeps L and U square, padding with 1s on the diagonal', () => {
+    s().setSize(4);
+    expect(s().lCells.map((r) => r.length)).toEqual([4, 4, 4, 4]);
+    expect(s().lCells[3]).toEqual(['0', '0', '0', '1']);
+    expect(s().uCells[3]).toEqual(['0', '0', '0', '1']);
+    s().setSize(2);
+    expect(s().lCells).toEqual([
+      ['1', '0'],
+      ['2', '1'],
+    ]);
+  });
+
+  it('edits L and U cell by cell, and switches input', () => {
+    s().setLCell(2, 1, '7');
+    s().setUCell(0, 0, '3');
+    s().setSolveInput('LU');
+    expect(s().lCells[2][1]).toBe('7');
+    expect(s().uCells[0][0]).toBe('3');
+    expect(s().solveInput).toBe('LU');
+  });
+
+  it('"fill from A" refactors, and explains PA = LU when A needs row exchanges', () => {
+    s().setLCell(2, 1, '7');
+    s().fillFactorsFromA();
+    expect(s().lCells[2][1]).not.toBe('7');
+    expect(s().notice).toBeNull();
+    s().loadPreset('paluExample');
+    s().fillFactorsFromA();
+    expect(s().notice).toMatch(/PA = LU/);
+    expect(s().uCells).toEqual([
+      ['2', '4', '2'],
+      ['0', '3', '1'],
+      ['0', '0', '1'],
+    ]);
+  });
+});
+
 describe('parseLesson3', () => {
   it('parses every grid exactly and flags bad cells', () => {
     const sys = parseLesson3([['1', 'x'], ['0.5', '2']], [['1', '2']], [['1']], [['3/4']]);
@@ -82,6 +155,12 @@ describe('parseLesson3', () => {
     expect(sys.invalid.A).toEqual([[0, 1]]);
     expect(sys.rhs).toHaveLength(1);
     expect(matrixToStrings(sys.C)).toEqual([['3/4']]);
+  });
+
+  it('parses L and U, flagging bad cells', () => {
+    const sys = parseLesson3([['1']], [['1']], [['1']], [['1']], [['1', '0'], ['x', '1']], [['2', '1'], ['0', '3/2']]);
+    expect(matrixToStrings(sys.U)).toEqual([['2', '1'], ['0', '3/2']]);
+    expect(sys.invalid.L).toEqual([[1, 0]]);
   });
 
   it('right-hand side cells are flagged as [k, i]', () => {

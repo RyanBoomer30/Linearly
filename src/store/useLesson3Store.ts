@@ -3,13 +3,15 @@ import type { Pivoting } from '../core/lu';
 import type { Matrix, Vector } from '../core/matrix';
 import type { ViewId } from '../presets';
 import { lesson3PresetById, productPresetById, type Lesson3Preset } from '../presets/lesson3';
+import { lu } from '../core/lu';
+import { Rational } from '../core/rational';
 import { editorText } from './useDataStore';
 import { useStore } from './useStore';
 
 export type Lesson3ViewId = 'twoWays' | 'layers' | 'lu' | 'solve' | 'manyRhs' | 'ldu' | 'permutations';
 
-/** Which factorization the layers view peels into rank-1 pieces (L3-R4). */
-export type LayerSource = 'product' | 'cr' | 'lu';
+/** Which factorization the layers view peels into rank-1 pieces (L3-R4): B × C, CR of A, LU of A, or L and U entered directly. */
+export type LayerSource = 'product' | 'cr' | 'lu' | 'factors';
 
 /**
  * Lesson 3 store (§8): one square matrix A and a list of right-hand sides,
@@ -19,6 +21,11 @@ export type LayerSource = 'product' | 'cr' | 'lu';
 export interface Lesson3State {
   aCells: string[][];
   rhsCells: string[][];
+  /** L3-S6: solve from A (factor it) or from L and U entered directly. */
+  solveInput: 'A' | 'LU';
+  /** L3-S6: the factors, n × n like A; filled by factoring A when a preset loads or the size changes. */
+  lCells: string[][];
+  uCells: string[][];
   presetId: string | null;
   bCells: string[][];
   cCells: string[][];
@@ -34,6 +41,11 @@ export interface Lesson3State {
   /** A stays square: n × n with n in 1–4; right-hand sides follow. */
   setSize: (n: number) => void;
   setRhsCell: (k: number, i: number, value: string) => void;
+  setSolveInput: (input: 'A' | 'LU') => void;
+  setLCell: (row: number, col: number, value: string) => void;
+  setUCell: (row: number, col: number, value: string) => void;
+  /** L3-S6: L and U from factoring the current A (with row exchanges when needed, explained in `notice`). */
+  fillFactorsFromA: () => void;
   /** L3-K1 */
   addRhs: () => void;
   removeRhs: (k: number) => void;
@@ -57,7 +69,34 @@ export interface Lesson3State {
 const initial = lesson3PresetById('luExample')!;
 const initialProduct = productPresetById('crProduct')!;
 
-const presetState = (p: Lesson3Preset) => ({ aCells: p.A, rhsCells: p.rhs, presetId: p.id, pivoting: p.pivoting, notice: null });
+/**
+ * L and U for the given A, as editor text, using the lesson's pivoting setting.
+ * When that stops at a zero pivot, partial pivoting (which always finishes)
+ * is used instead. Fails only on cells that don't parse.
+ */
+function factorCells(aCells: string[][], pivoting: Pivoting): { lCells: string[][]; uCells: string[][]; swapped: boolean } | null {
+  const values = aCells.map((r) => r.map((c) => Rational.parse(c)));
+  if (values.some((r) => r.some((v) => v === null))) return null;
+  const first = lu(values as Rational[][], { pivoting });
+  const r = first.status.kind === 'stopped' ? lu(values as Rational[][], { pivoting: 'partial' }) : first;
+  return { lCells: r.L.map((row) => row.map(editorText)), uCells: r.U.map((row) => row.map(editorText)), swapped: r.swaps.length > 0 };
+}
+
+/** n × n with 1s on the diagonal where new rows and columns are added, so padded factors stay invertible. */
+const fitFactor = (cells: string[][], n: number) =>
+  Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => cells[i]?.[j] ?? (i === j ? '1' : '0')));
+
+const presetState = (p: Lesson3Preset) => ({
+  aCells: p.A,
+  rhsCells: p.rhs,
+  presetId: p.id,
+  pivoting: p.pivoting,
+  notice: null,
+  ...(() => {
+    const f = factorCells(p.A, p.pivoting);
+    return f ? { lCells: f.lCells, uCells: f.uCells } : {};
+  })(),
+});
 
 const replaceAt = <T,>(arr: T[], i: number, value: T) => arr.map((x, k) => (k === i ? value : x));
 const setGridCell = (grid: string[][], row: number, col: number, value: string) => replaceAt(grid, row, replaceAt(grid[row], col, value));
@@ -67,6 +106,9 @@ const MAX_SIZE = 4;
 const MAX_RHS = 9;
 
 export const useLesson3Store = create<Lesson3State>((set) => ({
+  lCells: [],
+  uCells: [],
+  solveInput: 'A',
   ...presetState(initial),
   bCells: initialProduct.B,
   cCells: initialProduct.C,
@@ -83,9 +125,26 @@ export const useLesson3Store = create<Lesson3State>((set) => ({
         : {
             aCells: fit(s.aCells, n, () => []).map((r) => fit(r, n, () => '0')),
             rhsCells: s.rhsCells.map((b) => fit(b, n, () => '0')),
+            lCells: fitFactor(s.lCells, n),
+            uCells: fitFactor(s.uCells, n),
             presetId: null,
           },
     ),
+  setSolveInput: (solveInput) => set({ solveInput }),
+  setLCell: (row, col, value) => set((s) => ({ lCells: setGridCell(s.lCells, row, col, value) })),
+  setUCell: (row, col, value) => set((s) => ({ uCells: setGridCell(s.uCells, row, col, value) })),
+  fillFactorsFromA: () =>
+    set((s) => {
+      const f = factorCells(s.aCells, s.pivoting);
+      if (!f) return { notice: "A has cells that don't parse; fix them first." };
+      return {
+        lCells: f.lCells,
+        uCells: f.uCells,
+        notice: f.swapped
+          ? 'A needs row exchanges, so these factors satisfy PA = LU: LU is A with its rows reordered (see the PA = LU tab).'
+          : null,
+      };
+    }),
   setRhsCell: (k, i, value) => set((s) => ({ rhsCells: replaceAt(s.rhsCells, k, replaceAt(s.rhsCells[k], i, value)), presetId: null })),
   addRhs: () =>
     set((s) => (s.rhsCells.length >= MAX_RHS ? s : { rhsCells: [...s.rhsCells, s.aCells.map(() => '0')], presetId: null })),

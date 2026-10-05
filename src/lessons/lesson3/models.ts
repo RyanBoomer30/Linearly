@@ -10,7 +10,7 @@ import { countOperations } from '../../core/counter';
 import { crFactorization } from '../../core/factorization';
 import { solveFloat } from '../../core/floatLu';
 import { ldu, lu, peel, type LduResult, type LuResult, type Pivoting } from '../../core/lu';
-import { getColumn, getRow, matrix, matrixEquals, shape, transpose, vector, vectorEquals, zeros, type Matrix, type Vector } from '../../core/matrix';
+import { getColumn, getRow, identity, matrix, matrixEquals, shape, transpose, vector, vectorEquals, zeros, type Matrix, type Vector } from '../../core/matrix';
 import { frobeniusNorm, normSquared } from '../../core/norms';
 import { costFormulas, costOfRightHandSides, measuredCosts } from '../../core/opCount';
 import { factorial, allPermutations, composePermutations, permutationFromSwaps, permuteRows, type Swap } from '../../core/permutation';
@@ -170,7 +170,12 @@ export interface LayersView {
  * The product (B, C) or a factorization of A (CR from Lesson 1, LU from
  * §7.3) as a stack of rank-1 layers. Throws when LU stops at a zero pivot.
  */
-export function layersView(source: LayerSource, input: { A: Matrix; B: Matrix; C: Matrix }, keep: number, sortBySize: boolean): LayersView {
+export function layersView(
+  source: LayerSource,
+  input: { A: Matrix; B: Matrix; C: Matrix; L?: Matrix; U?: Matrix },
+  keep: number,
+  sortBySize: boolean,
+): LayersView {
   // Each layer is (column k of the left factor)(row k of the right factor).
   let left: Matrix;
   let right: Matrix;
@@ -180,6 +185,15 @@ export function layersView(source: LayerSource, input: { A: Matrix; B: Matrix; C
   } else if (source === 'cr') {
     const cr = crFactorization(input.A);
     [left, right] = [cr.C, cr.R];
+  } else if (source === 'factors') {
+    // L and U entered directly: layer k is (column k of L)(row k of U), and the layers add up to A = LU.
+    const L = input.L ?? [];
+    const U = input.U ?? [];
+    const n = L.length;
+    if (n === 0 || U.length !== n || [...L, ...U].some((r) => r.length !== n)) throw new RangeError('L and U must be square and the same size');
+    requireTriangular(L, 'L', true);
+    requireTriangular(U, 'U', false);
+    [left, right] = [L, U];
   } else {
     const r = lu(input.A, { pivoting: 'none' });
     requireComplete(r);
@@ -321,6 +335,8 @@ export interface ChainLink {
 }
 
 export interface SolveView {
+  /** The matrix being solved: A, or LU when the factors are entered directly (L3-S6). */
+  A: Matrix;
   P: Matrix;
   L: Matrix;
   U: Matrix;
@@ -348,7 +364,7 @@ export function solveView(A: Matrix, b: Vector, pivoting: Pivoting): SolveView {
     { from: swapped ? 'Pb' : 'b', to: 'c', tex: swapped ? 'Lc = Pb' : 'Lc = b', shape: 'lower' },
     { from: 'c', to: 'x', tex: 'Ux = c', shape: 'upper' },
   ];
-  const base = { P: r.P, L: r.L, U: r.U, Pb, forward, chain };
+  const base = { A, P: r.P, L: r.L, U: r.U, Pb, forward, chain };
   if (r.status.kind === 'stopped') return { ...base, back: null, x: null, check: null, message: r.status.reason };
   const back = forward.solution ? backSub(r.U, forward.solution) : null;
   const x = back?.solution ?? null;
@@ -359,6 +375,60 @@ export function solveView(A: Matrix, b: Vector, pivoting: Pivoting): SolveView {
     x,
     check: x && Ax ? { equal: vectorEquals(Ax, b), tex: `Ax = ${colTex(Ax)} ${vectorEquals(Ax, b) ? '=' : '\\neq'} b` } : null,
     message: back?.stopped?.reason ?? forward.stopped?.reason ?? null,
+  };
+}
+
+/** First nonzero entry on the wrong side of the diagonal, or null when M is triangular. */
+function offTriangle(M: Matrix, lower: boolean): { i: number; j: number } | null {
+  for (let i = 0; i < M.length; i++) {
+    for (let j = 0; j < M.length; j++) {
+      if ((lower ? j > i : j < i) && !M[i][j].isZero()) return { i, j };
+    }
+  }
+  return null;
+}
+
+/** RangeError naming the first entry on the wrong side of the diagonal. */
+function requireTriangular(M: Matrix, name: string, lower: boolean): void {
+  const bad = offTriangle(M, lower);
+  if (bad) {
+    throw new RangeError(
+      `${name} must be ${lower ? 'lower' : 'upper'} triangular: entry (${bad.i + 1}, ${bad.j + 1}) is ${M[bad.i][bad.j].toString()}, not 0.`,
+    );
+  }
+}
+
+/**
+ * L3-S6: solve Ax = b from factors entered directly. L must be lower
+ * triangular and U upper triangular (RangeError otherwise, naming the entry);
+ * A is their product. A zero pivot stops the substitution with a reason.
+ */
+export function solveWithFactorsView(L: Matrix, U: Matrix, b: Vector): SolveView {
+  const n = b.length;
+  const square = (M: Matrix) => M.length === n && M.every((r) => r.length === n);
+  if (!square(L) || !square(U)) throw new RangeError(`L and U must be ${n} × ${n} to match b`);
+  requireTriangular(L, 'L', true);
+  requireTriangular(U, 'U', false);
+  const A = matMul(L, U);
+  const forward = forwardSub(L, b);
+  const back = forward.solution ? backSub(U, forward.solution) : null;
+  const x = back?.solution ?? null;
+  const Ax = x ? matVec(A, x) : null;
+  return {
+    A,
+    P: identity(n),
+    L,
+    U,
+    Pb: b,
+    forward,
+    back,
+    chain: [
+      { from: 'b', to: 'c', tex: 'Lc = b', shape: 'lower' },
+      { from: 'c', to: 'x', tex: 'Ux = c', shape: 'upper' },
+    ],
+    x,
+    check: x && Ax ? { equal: vectorEquals(Ax, b), tex: `LUx = ${colTex(Ax)} ${vectorEquals(Ax, b) ? '=' : '\\neq'} b` } : null,
+    message: forward.stopped?.reason ?? back?.stopped?.reason ?? null,
   };
 }
 

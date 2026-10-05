@@ -16,6 +16,7 @@ import {
   permutationGallery,
   productShape,
   solveView,
+  solveWithFactorsView,
   tinyPivotDemo,
   twoWaysView,
 } from '../models';
@@ -122,6 +123,33 @@ describe('§7.2 rank-1 layers', () => {
     expect(layersView('cr', input(matrix(A3)), 2, false).leftoverSize).toBe(0);
   });
 
+  it('L and U entered directly: layer k is (column k of L)(row k of U), summing to LU (L3-R4)', () => {
+    const view = layersView('factors', { ...input(matrix(A3)), L: matrix(LU_L), U: matrix(LU_U) }, 1, false);
+    expect(view.layers.map((l) => strings(l.matrix))).toEqual([
+      s([[1, 2, 2], [2, 4, 4], [-1, -2, -2]]),
+      s([[0, 0, 0], [0, 2, 1], [0, 10, 5]]),
+      s([[0, 0, 0], [0, 0, 0], [0, 0, 4]]),
+    ]);
+    expect(view.layers.map((l) => l.normSquared.toString())).toEqual(['54', '130', '16']);
+    expect(strings(view.total)).toEqual(s(LU_A));
+    expect(strings(view.leftover)).toEqual(s([[0, 0, 0], [0, 2, 1], [0, 10, 9]]));
+  });
+
+  it('L and U ignore A: they are the factors on screen', () => {
+    const a = layersView('factors', { ...input(matrix(A3)), L: matrix(LU_L), U: matrix(LU_U) }, 3, false);
+    const b = layersView('factors', { ...input(matrix(LU_A)), L: matrix(LU_L), U: matrix(LU_U) }, 3, false);
+    expect(strings(a.total)).toEqual(strings(b.total));
+  });
+
+  it('L and U must be triangular, naming the entry; L may have any diagonal', () => {
+    expect(() => layersView('factors', { ...input(matrix(A3)), L: matrix([[1, 2], [0, 1]]), U: matrix([[1, 0], [0, 1]]) }, 1, false)).toThrow(
+      /L must be lower triangular: entry \(1, 2\)/,
+    );
+    expect(strings(layersView('factors', { ...input(matrix(A3)), L: matrix([[2, 0], [1, 1]]), U: matrix([[1, 1], [0, 1]]) }, 2, false).total)).toEqual(
+      s([[2, 2], [1, 2]]),
+    );
+  });
+
   it('the caption says no CR or LU layer dominates (L3-R5)', () => {
     expect(layersView('lu', input(matrix(LU_A)), 1, false).caption).toMatch(/SVD|eigen/i);
   });
@@ -199,10 +227,60 @@ describe('§7.4 solving with LU', () => {
     expect(vectorToStrings(view.x!)).toEqual(sv([1, 1, 1]));
   });
 
+  it('reports the matrix it solved: A itself when factoring', () => {
+    expect(strings(solveView(matrix(LU_A), vector(LU_B), 'none').A)).toEqual(s(LU_A));
+  });
+
   it('a zero pivot stops back substitution with a reason (L3-S5)', () => {
     const view = solveView(matrix(A3), vector([2, 5, 4]), 'none');
     expect(view.x).toBeNull();
     expect(view.message).toMatch(/pivot/i);
+  });
+});
+
+describe('§7.4 solving from L and U entered directly (L3-S6)', () => {
+  it('the notes\' factors: c = (2, 1, −4), x = (2, 1, −1), and A = LU', () => {
+    const view = solveWithFactorsView(matrix(LU_L), matrix(LU_U), vector(LU_B));
+    expect(vectorToStrings(view.forward.solution!)).toEqual(sv([2, 1, -4]));
+    expect(vectorToStrings(view.x!)).toEqual(sv([2, 1, -1]));
+    expect(strings(view.A)).toEqual(s(LU_A));
+    expect(view.check?.equal).toBe(true);
+    expect(view.message).toBeNull();
+  });
+
+  it('no row exchanges: P = I and the chain starts from b', () => {
+    const view = solveWithFactorsView(matrix(LU_L), matrix(LU_U), vector(LU_B));
+    expect(strings(view.P)).toEqual(s([[1, 0, 0], [0, 1, 0], [0, 0, 1]]));
+    expect(view.chain.map((l) => [l.from, l.tex])).toEqual([
+      ['b', 'Lc = b'],
+      ['c', 'Ux = c'],
+    ]);
+  });
+
+  it('L need not have 1s on its diagonal', () => {
+    // A = LU = [[2,2],[1,2]]; c = (1, 2); x = (−1, 2).
+    const view = solveWithFactorsView(matrix([[2, 0], [1, 1]]), matrix([[1, 1], [0, 1]]), vector([2, 3]));
+    expect(vectorToStrings(view.x!)).toEqual(sv([-1, 2]));
+    expect(strings(view.A)).toEqual(s([[2, 2], [1, 2]]));
+  });
+
+  it('a zero pivot in U stops back substitution with a reason', () => {
+    const view = solveWithFactorsView(matrix(LU_L), matrix([[1, 2, 2], [0, 2, 1], [0, 0, 0]]), vector(LU_B));
+    expect(view.x).toBeNull();
+    expect(view.message).toMatch(/pivot/i);
+  });
+
+  it('L must be lower triangular and U upper triangular, naming the entry', () => {
+    expect(() => solveWithFactorsView(matrix([[1, 5], [0, 1]]), matrix([[1, 0], [0, 1]]), vector([1, 1]))).toThrow(
+      /L must be lower triangular: entry \(1, 2\) is 5/,
+    );
+    expect(() => solveWithFactorsView(matrix([[1, 0], [0, 1]]), matrix([[1, 0], [3, 1]]), vector([1, 1]))).toThrow(
+      /U must be upper triangular: entry \(2, 1\) is 3/,
+    );
+  });
+
+  it('sizes must match b', () => {
+    expect(() => solveWithFactorsView(matrix(LU_L), matrix(LU_U), vector([1, 2]))).toThrow(RangeError);
   });
 });
 

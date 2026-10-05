@@ -33,7 +33,24 @@ export function PivotingPicker() {
 }
 
 /** Sidebar for the square-matrix views: preset, A, right-hand sides, pivoting, and the Lesson 1 import (§8). */
-export function Controls({ children, showRhs = true, showPivoting = true }: { children?: ReactNode; showRhs?: boolean; showPivoting?: boolean }) {
+export function Controls({
+  children,
+  showRhs = true,
+  showPivoting = true,
+  showA = true,
+  factors,
+  top,
+}: {
+  children?: ReactNode;
+  showRhs?: boolean;
+  showPivoting?: boolean;
+  /** Hide A's editor (L3-S6: solving from L and U). */
+  showA?: boolean;
+  /** Shown in A's place, e.g. the L and U editors. */
+  factors?: ReactNode;
+  /** Shown right under the preset picker, e.g. a switch that changes the editors below. */
+  top?: ReactNode;
+}) {
   const { aCells, rhsCells, presetId, notice, setACell, setRhsCell, setSize, addRhs, removeRhs, loadPreset, importFromLesson1, dismissNotice } =
     useLesson3Store();
   const system = useLesson3System();
@@ -58,25 +75,32 @@ export function Controls({ children, showRhs = true, showPivoting = true }: { ch
           ))}
         </select>
       </label>
-      <GridEditor
-        label="A"
-        cells={aCells}
-        onChange={setACell}
-        invalid={invalid.A}
-        columnHeader={(j) => `a${'₁₂₃₄'[j]}`}
-        columnColor={columnColor}
-      />
-      <div className="editor-buttons">
-        <button type="button" onClick={() => run(() => setSize(n + 1))} disabled={n >= 4}>
-          + size
-        </button>
-        <button type="button" onClick={() => run(() => setSize(n - 1))} disabled={n <= 1}>
-          − size
-        </button>
-        <button type="button" onClick={() => run(importFromLesson1)}>
-          Use Lesson 1's matrix
-        </button>
-      </div>
+      {top}
+      {showA ? (
+        <>
+        <GridEditor
+          label="A"
+          cells={aCells}
+          onChange={setACell}
+          invalid={invalid.A}
+          columnHeader={(j) => `a${'₁₂₃₄'[j]}`}
+          columnColor={columnColor}
+        />
+        <div className="editor-buttons">
+          <button type="button" onClick={() => run(() => setSize(n + 1))} disabled={n >= 4}>
+            + size
+          </button>
+          <button type="button" onClick={() => run(() => setSize(n - 1))} disabled={n <= 1}>
+            − size
+          </button>
+          <button type="button" onClick={() => run(importFromLesson1)}>
+            Use Lesson 1's matrix
+          </button>
+        </div>
+        </>
+      ) : (
+        factors
+      )}
       {notice && (
         <div className="view-notice" role="status">
           {notice}
@@ -155,6 +179,24 @@ export function ProductControls({ children }: { children?: ReactNode }) {
       </div>
       {!system.ok && <ViewNotice error={system.error} />}
       {children}
+    </>
+  );
+}
+
+/** L3-S6 / L3-R4: L and U entered directly, shared by the solve and layers views. */
+export function FactorEditors() {
+  const { lCells, uCells, setLCell, setUCell, fillFactorsFromA } = useLesson3Store();
+  const system = useLesson3System();
+  const invalid = system.ok ? system.value.invalid : { L: [], U: [] };
+  return (
+    <>
+      <div className="product-editors">
+        <GridEditor label="L (lower triangular)" cells={lCells} onChange={setLCell} invalid={invalid.L} />
+        <GridEditor label="U (upper triangular)" cells={uCells} onChange={setUCell} invalid={invalid.U} />
+      </div>
+      <button type="button" onClick={fillFactorsFromA}>
+        Fill L and U by factoring A
+      </button>
     </>
   );
 }

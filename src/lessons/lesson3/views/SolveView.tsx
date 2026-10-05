@@ -10,9 +10,9 @@ import type { SubstitutionResult } from '../../../core/substitution';
 import { useLesson3Store } from '../../../store/useLesson3Store';
 import { attempt } from '../../../store/useSystem';
 import type { Matrix } from '../../../core/matrix';
-import { solveView, type SolveView as SolveModel } from '../models';
+import { solveView, solveWithFactorsView, type SolveView as SolveModel } from '../models';
 import { useLesson3 } from '../useLesson3';
-import { Controls } from './Controls';
+import { Controls, FactorEditors } from './Controls';
 import { subscript, texColumn, texEntries } from './format';
 
 /** §7.4 */
@@ -20,14 +20,35 @@ export function SolveView() {
   const pivoting = useLesson3Store((s) => s.pivoting);
   const rhsCount = useLesson3Store((s) => s.rhsCells.length);
   const openInLesson1 = useLesson3Store((s) => s.openInLesson1);
+  const { solveInput, setSolveInput } = useLesson3Store();
   const [k, setK] = useState(0);
   const which = Math.min(k, rhsCount - 1);
-  const view = useLesson3((s) => ({ ...solveView(s.A, s.rhs[which], pivoting), A: s.A, b: s.rhs[which] }), [pivoting, which]);
+  const view = useLesson3(
+    (s) => ({
+      ...(solveInput === 'LU' ? solveWithFactorsView(s.L, s.U, s.rhs[which]) : solveView(s.A, s.rhs[which], pivoting)),
+      b: s.rhs[which],
+    }),
+    [pivoting, which, solveInput],
+  );
 
   return (
     <ModuleLayout
       controls={
-        <Controls>
+        <Controls
+          showA={solveInput === 'A'}
+          showPivoting={solveInput === 'A'}
+          factors={<FactorEditors />}
+          top={
+            <div className="segmented" role="group" aria-label="Solve from">
+              <button type="button" className={solveInput === 'A' ? 'active' : undefined} onClick={() => setSolveInput('A')}>
+                Factor A
+              </button>
+              <button type="button" className={solveInput === 'LU' ? 'active' : undefined} onClick={() => setSolveInput('LU')}>
+                Enter L and U
+              </button>
+            </div>
+          }
+        >
           <Caption section="§3.3">
             With A = LU, Ax = b becomes two triangular systems: Lc = b from the top down, then Ux = c from the bottom up.
           </Caption>
@@ -49,6 +70,12 @@ export function SolveView() {
       {!view.ok && <ViewNotice error={view.error} />}
       {view.ok && (
         <>
+          {solveInput === 'LU' && (
+            <div className="matrix-pair">
+              <Tex tex="A = LU =" />
+              <MatrixTex entries={texEntries(view.value.A)} />
+            </div>
+          )}
           <Chain view={view.value} />
           <Substitution title="Forward substitution: Lc = b" matrix={view.value.L} result={view.value.forward} unknown="c" />
           {view.value.back && <Substitution title="Back substitution: Ux = c" matrix={view.value.U} result={view.value.back} unknown="x" />}
