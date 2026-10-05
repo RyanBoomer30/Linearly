@@ -191,3 +191,84 @@ export const QR_Q6 = [
 
 /** Scale every entry of an integer matrix by 1/d, as strings. */
 export const over = (M: number[][], d: number) => M.map((r) => r.map((x) => q(x, d).toString()));
+
+// Section 13.5 test fixtures (Lesson 5 notes) ------------------------------------
+
+/** Notes §5.1: the mini web. Decimals as strings so they parse exactly. Rows "to", columns "from". */
+export const MINI_WEB = [
+  ['0.7', '0.1', '0.2'],
+  ['0.2', '0.4', '0.2'],
+  ['0.1', '0.5', '0.6'],
+];
+export const MINI_WEB_X0 = [1, 0, 0];
+
+/** Notes §5.3: V (columns v₁, v₂, v₃ for λ = 1, 1/2, 1/5) and 60V⁻¹. */
+export const MINI_WEB_V = [
+  [7, 1, -1],
+  [5, 0, -3],
+  [8, -1, 4],
+];
+export const MINI_WEB_VINV_60 = [
+  [3, 3, 3],
+  [44, -36, -16],
+  [5, -15, 5],
+];
+
+/** Notes §5.3 corrected (L5-RK5): 20 × the λ = 1 layer, and 60 × the 0.5ᵗ and 0.2ᵗ layers. */
+export const MINI_WEB_LAYERS = {
+  one20: [
+    [7, 7, 7],
+    [5, 5, 5],
+    [8, 8, 8],
+  ],
+  half60: [
+    [44, -36, -16],
+    [0, 0, 0],
+    [-44, 36, 16],
+  ],
+  fifth60: [
+    [-5, 15, -5],
+    [-15, 45, -15],
+    [20, -60, 20],
+  ],
+};
+
+/** Notes §5.2: the 40-state sequence, exactly as printed (with its space). */
+export const NOTES_SEQUENCE = '311213223112123122331313 3122321213223221';
+/** The homework answer: P̂ (rows "to", columns "from"). */
+export const NOTES_P_HAT = [
+  ['1/6', '1/3', '1/2'],
+  ['1/2', '1/3', '1/3'],
+  ['1/3', '1/3', '1/6'],
+];
+
+/** Perron–Frobenius counterexamples (L5-PF5). */
+export const FLIP = [
+  [0, 1],
+  [1, 0],
+];
+export const CYCLE = [
+  [0, 0, 1],
+  [1, 0, 0],
+  [0, 1, 0],
+];
+export const ABSORBING = [
+  ['1', '0', '0.5'],
+  ['0', '1', '0.5'],
+  ['0', '0', '0'],
+];
+
+/** Each column's sign flipped so its first nonzero entry is positive: compares eigenvector matrices up to column signs. */
+export const columnSigns = (M: string[][]) => {
+  const cols = M[0].map((_, j) => M.map((r) => r[j]));
+  const fixed = cols.map((c) => {
+    const first = c.find((x) => x !== '0');
+    return first?.startsWith('-') ? c.map((x) => (x === '0' ? x : x.startsWith('-') ? x.slice(1) : `-${x}`)) : c;
+  });
+  return M.map((_, i) => fixed.map((c) => c[i]));
+};
+/** columnSigns for rows. */
+export const rowSigns = (M: string[][]) => {
+  const t = (X: string[][]) => X[0].map((_, j) => X.map((r) => r[j]));
+  return t(columnSigns(t(M)));
+};

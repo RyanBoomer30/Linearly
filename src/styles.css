@@ -296,3 +296,45 @@ select { background: var(--surface); border: 1px solid var(--border); border-rad
 .comparison-table caption { caption-side: bottom; text-align: left; color: var(--muted); padding-top: 4px; }
 .svd-panel { border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; background: var(--surface); }
 .module-controls .precision-badge { align-self: flex-start; }
+
+/* Lesson 5 ---------------------------------------------------------------------- */
+.chain-layout { display: flex; gap: 24px; flex-wrap: wrap; align-items: center; }
+.state-graph { width: 100%; max-width: 420px; height: auto; touch-action: none; user-select: none; }
+.graph-node { cursor: grab; }
+.graph-node:focus-visible circle { stroke-dasharray: 4 3; }
+.graph-node text { font-weight: 600; font-size: 12px; }
+.graph-edge path { fill: none; stroke-width: 2; }
+.graph-edge text { font-size: 12px; fill: var(--text); paint-order: stroke; stroke: var(--surface); stroke-width: 4px; cursor: pointer; }
+.graph-edge.highlighted path { stroke-width: 3.5; }
+.graph-edge.dim { opacity: 0.25; }
+.chain-matrix { display: flex; flex-direction: column; gap: 2px; }
+.matrix-labels { display: flex; gap: 12px; justify-content: flex-end; font-size: 0.8rem; font-weight: 600; }
+.matrix-with-rows { display: flex; align-items: center; gap: 8px; }
+.row-labels { display: flex; flex-direction: column; gap: 10px; font-size: 0.8rem; font-weight: 600; }
+.arrow-editor { display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border); border-radius: 6px; padding: 8px; }
+.column-checks { margin: 0; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.counterexample { border-left: 3px solid var(--accent); padding-left: 8px; }
+.bar-chart { margin: 0; max-width: 420px; }
+.bar-chart svg { width: 100%; height: auto; }
+.bar-chart-tick line { stroke: var(--border); }
+.bar-chart text { font-size: 11px; fill: var(--muted); }
+.bar-chart .bar-value { fill: var(--text); }
+.bar-chart .bar-label { font-weight: 600; }
+.bar-overlay { stroke: var(--text); stroke-width: 3; }
+.bar-chart figcaption { color: var(--muted); font-size: 0.85rem; }
+.code-block { position: relative; }
+.code-block pre { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 12px; overflow-x: auto; font-size: 0.85rem; }
+.code-block button { position: absolute; top: 6px; right: 6px; }
+.sequence-input { display: flex; flex-direction: column; gap: 4px; font-weight: 600; }
+.sequence-input textarea { font-family: ui-monospace, monospace; resize: vertical; }
+.sequence-strip { font-family: ui-monospace, monospace; font-weight: 600; letter-spacing: 1px; overflow-wrap: anywhere; }
+.sequence-state.active { outline: 2px solid var(--text); border-radius: 2px; }
+.practice-grid td { padding: 2px 4px; white-space: nowrap; }
+.practice-grid input { width: 4.5em; }
+.practice-correct input { border-color: #009e73; }
+.practice-wrong input, .practice-invalid input { border-color: #cc3311; }
+.practice-mark { display: inline-block; width: 1em; margin-left: 2px; }
+.practice-correct .practice-mark { color: #009e73; }
+.practice-wrong .practice-mark, .practice-invalid .practice-mark { color: #cc3311; }
+.component-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.lesson-summary { margin-top: 16px; font-style: italic; }

@@ -9,6 +9,7 @@ const Lesson1 = lazy(() => import('./lessons/lesson1/Lesson1'));
 const Lesson2 = lazy(() => import('./lessons/lesson2/Lesson2'));
 const Lesson3 = lazy(() => import('./lessons/lesson3/Lesson3'));
 const Lesson4 = lazy(() => import('./lessons/lesson4/Lesson4'));
+const Lesson5 = lazy(() => import('./lessons/lesson5/Lesson5'));
 
 export function App() {
   useResolvedTheme();
@@ -29,6 +30,7 @@ export function App() {
           {lesson === 2 && <Lesson2 />}
           {lesson === 3 && <Lesson3 />}
           {lesson === 4 && <Lesson4 />}
+          {lesson === 5 && <Lesson5 />}
         </Suspense>
       </main>
     </div>

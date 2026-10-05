@@ -62,3 +62,14 @@ export const RESIDUAL_COLOR = '#D55E00';
 export const MULTIPLIER_COLOR = '#CC3311';
 /** Growth chart curves (L3-K3). */
 export const COST_COLORS = { factor: '#0072B2', solve: '#009E73', fromScratch: '#D55E00' } as const;
+
+/**
+ * Lesson 5: one color per state everywhere — its node, its bar, its row and
+ * column labels in P, and its vertex of the simplex. Column i of P is state i,
+ * so these match the column colors.
+ */
+export const STATE_COLORS = COLUMN_COLORS;
+export const stateColor = (i: number) => STATE_COLORS[i % STATE_COLORS.length];
+/** Eigen-components c_i λ_i^t v_i (L5-CO3/CO4) and their layers (L5-RK1). */
+export const EIGEN_COLORS = ['#0072B2', '#D55E00', '#009E73', '#CC79A7'] as const;
+export const eigenColor = (i: number) => EIGEN_COLORS[i % EIGEN_COLORS.length];

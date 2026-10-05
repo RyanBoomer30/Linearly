@@ -25,3 +25,8 @@ export * from './qr';
 export * from './gramSchmidt';
 export * from './svd';
 export * from './accuracy';
+export * from './complex';
+export * from './random';
+export * from './scaling';
+export * from './eigen';
+export * from './markov';
