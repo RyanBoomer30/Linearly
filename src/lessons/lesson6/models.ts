@@ -4,7 +4,9 @@
  * equation, policy iteration, and value iteration with Q-values. Exact when γ
  * and the probabilities are rational and the grid has at most 12 states (the
  * notes' grid has 11); floating point otherwise, and every model that shows
- * values reports which (F-D10). Kept pure so they can be unit tested.
+ * values reports which (F-D10). The statistics primer (sample mean, variance
+ * and covariance, ahead of Lesson 7's covariance matrix) is always exact.
+ * Kept pure so they can be unit tested.
  */
 import type { ChartFrame } from '../../components/canvas/charts';
 import type { Bar } from '../../components/display/BarChart';
@@ -17,6 +19,7 @@ import { mulberry32, sampleIndex } from '../../core/random';
 import { Rational } from '../../core/rational';
 import { collectExperience, episodeSeed, estimateModel, followActions, qLearning, rollout, rollouts, type ModelEstimate, type Transition } from '../../core/reinforcement';
 import { solve } from '../../core/solve';
+import { sampleCovariance, sampleVariance } from '../../core/statistics';
 import type { NumberDisplay } from '../../store/useDataStore';
 import { COLUMN_COLORS } from '../../theme/colors';
 
@@ -922,5 +925,162 @@ export function qLearningView(
       points,
     },
     caption: `${options.episodes} episodes, α = ${options.alpha}, ε = ${options.epsilon}, seed ${options.seed}. Q-learning never uses Pₛₐ: it learns from (s, a, s′, r) alone. Its greedy policy ${agree ? 'already matches' : 'does not yet match'} π*.`,
+  };
+}
+
+// Statistics primer: sample mean, variance and covariance (ahead of Lesson 7) --------
+
+export interface StatsTable {
+  x1: Rational[];
+  x2: Rational[];
+  /** [row, col] of cells that did not parse (read as 0). */
+  invalid: [number, number][];
+}
+
+/** Parse the primer's two-column table exactly (F-E2); bad cells are flagged and read as 0. */
+export function parseStatsTable(cells: string[][]): StatsTable {
+  const invalid: [number, number][] = [];
+  const read = (text: string | undefined, i: number, j: number) => {
+    const r = Rational.parse((text ?? '').trim());
+    if (r) return r;
+    invalid.push([i, j]);
+    return Rational.ZERO;
+  };
+  const rows = cells.map((row, i) => [read(row[0], i, 0), read(row[1], i, 1)]);
+  return { x1: rows.map((r) => r[0]), x2: rows.map((r) => r[1]), invalid };
+}
+
+/** −1, 0 or +1: which way a product (x₁ − x̄₁)(x₂ − x̄₂) pulls the covariance. */
+export type ProductSign = -1 | 0 | 1;
+
+export interface StatsRow {
+  x1: string;
+  x2: string;
+  /** Deviations from the means. */
+  d1: string;
+  d2: string;
+  sq1: string;
+  sq2: string;
+  product: string;
+  sign: ProductSign;
+}
+
+export interface StatisticsView {
+  n: number;
+  means: [Rational, Rational];
+  variances: [Rational, Rational];
+  /** s = √s², floating point. */
+  stds: [number, number];
+  covariance: Rational;
+  /** One row per observation, then the column sums. */
+  rows: StatsRow[];
+  sums: { x1: string; x2: string; d1: string; d2: string; sq1: string; sq2: string; product: string };
+  steps: Lesson6Step[];
+  /** The scatter: data points, the mean point, and a frame around them. */
+  points: [number, number][];
+  meanPoint: [number, number];
+  frame: ChartFrame;
+  /** The 2 × 2 covariance matrix S of Lesson 7, exact. */
+  matrixTex: string;
+  verdict: string;
+}
+
+/** Long sums show their first three terms and the last. */
+function sumTerms(terms: string[]): string {
+  return terms.length <= 8 ? terms.join(' + ') : `${terms.slice(0, 3).join(' + ')} + \\cdots + ${terms[terms.length - 1]}`;
+}
+
+/** Statistics primer: every sum behind x̄, s² and Cov(x₁, x₂) written out, n − 1 in the denominators as in Lesson 7 (§7.2). */
+export function statisticsView(x1: Rational[], x2: Rational[], columns: [string, string], display: NumberDisplay): StatisticsView {
+  const n = x1.length;
+  if (n < 2) throw new RangeError('A sample variance needs at least 2 observations (it divides by n − 1)');
+  if (x2.length !== n) throw new RangeError('Both columns need the same number of values');
+  const N = Rational.of(n);
+  const N1 = Rational.of(n - 1);
+  const sum = (v: Rational[]) => v.reduce((a, x) => a.add(x), Rational.ZERO);
+  const means: [Rational, Rational] = [sum(x1).div(N), sum(x2).div(N)];
+  const d1 = x1.map((x) => x.sub(means[0]));
+  const d2 = x2.map((x) => x.sub(means[1]));
+  const sq1 = d1.map((d) => d.mul(d));
+  const sq2 = d2.map((d) => d.mul(d));
+  const products = d1.map((d, i) => d.mul(d2[i]));
+  const variances: [Rational, Rational] = [sampleVariance(x1), sampleVariance(x2)];
+  const covariance = sampleCovariance(x1, x2);
+  const stds: [number, number] = [Math.sqrt(variances[0].toNumber()), Math.sqrt(variances[1].toNumber())];
+
+  const t = (x: Rational) => tex(x, display);
+  const term = (x: Rational) => (x.isNegative() ? `(${t(x)})` : t(x));
+  const f = (x: Rational) => fmt(x, display);
+  const signOf = (x: Rational): ProductSign => (x.isZero() ? 0 : x.isNegative() ? -1 : 1);
+  const vec = (v: Rational[]) => `\\left(${v.length <= 8 ? v.map(t).join(', ') : `${v.slice(0, 3).map(t).join(', ')}, \\ldots, ${t(v[v.length - 1])}`}\\right)`;
+
+  const steps: Lesson6Step[] = [0, 1].map((j) => {
+    const x = j === 0 ? x1 : x2;
+    return {
+      description: `Sample mean of x${j === 0 ? '₁' : '₂'} (${columns[j]}): add the values, divide by n = ${n}`,
+      tex: `\\bar x_${j + 1} = \\frac{1}{n}\\sum_{i=1}^{n} x_${j + 1}^{(i)} = \\frac{1}{${n}}\\left(${sumTerms(x.map(term))}\\right) = \\frac{${t(sum(x))}}{${n}} = ${t(means[j])}`,
+    };
+  });
+  steps.push({
+    description: 'Subtract each mean: the deviations from the mean always add up to 0',
+    tex: `\\begin{aligned} x_1 - \\bar x_1 &= ${vec(d1)} \\\\ x_2 - \\bar x_2 &= ${vec(d2)} \\end{aligned} \\qquad \\sum_i \\left(x_j^{(i)} - \\bar x_j\\right) = 0`,
+  });
+  [0, 1].forEach((j) => {
+    const sq = j === 0 ? sq1 : sq2;
+    const d = j === 0 ? d1 : d2;
+    steps.push({
+      description: `Sample variance of x${j === 0 ? '₁' : '₂'}: the average squared deviation, dividing by n − 1 = ${n - 1}`,
+      tex: `s_${j + 1}^2 = \\frac{1}{n-1}\\sum_{i=1}^{n} \\left(x_${j + 1}^{(i)} - \\bar x_${j + 1}\\right)^2 = \\frac{1}{${n - 1}}\\left(${sumTerms(d.map((x) => `${term(x)}^2`))}\\right) = \\frac{${t(sum(sq))}}{${n - 1}} = ${t(variances[j])}`,
+    });
+  });
+  steps.push({
+    description: 'Standard deviation: the square root of the variance, back in the units of the data',
+    tex: `s_1 = \\sqrt{${t(variances[0])}} \\approx ${short(stds[0])}, \\qquad s_2 = \\sqrt{${t(variances[1])}} \\approx ${short(stds[1])}`,
+  });
+  steps.push({
+    description: 'Sample covariance: the average product of the two deviations, again dividing by n − 1',
+    tex: `\\operatorname{Cov}(x_1, x_2) = \\frac{1}{n-1}\\sum_{i=1}^{n} \\left(x_1^{(i)} - \\bar x_1\\right)\\left(x_2^{(i)} - \\bar x_2\\right) = \\frac{1}{${n - 1}}\\left(${sumTerms(d1.map((x, i) => `${term(x)}${term(d2[i])}`))}\\right) = \\frac{${t(sum(products))}}{${n - 1}} = ${t(covariance)}`,
+  });
+  steps.push({
+    description: 'A variance is the covariance of a variable with itself, so all four numbers fit in one symmetric matrix: Lesson 7’s covariance matrix S',
+    tex: `\\operatorname{Cov}(x_j, x_j) = s_j^2, \\qquad S = \\begin{bmatrix} s_1^2 & \\operatorname{Cov}(x_1, x_2) \\\\ \\operatorname{Cov}(x_2, x_1) & s_2^2 \\end{bmatrix} = ${matrixToTex([[t(variances[0]), t(covariance)], [t(covariance), t(variances[1])]], false, {})}`,
+  });
+
+  const points = x1.map((x, i) => [x.toNumber(), x2[i].toNumber()] as [number, number]);
+  const axis = (vals: number[], title: string) => {
+    const lo = Math.min(...vals);
+    const hi = Math.max(...vals);
+    const pad = 0.15 * Math.max(hi - lo, 1);
+    return { min: lo - pad, max: hi + pad, title };
+  };
+  const c = signOf(covariance);
+  return {
+    n,
+    means,
+    variances,
+    stds,
+    covariance,
+    rows: x1.map((x, i) => ({
+      x1: f(x),
+      x2: f(x2[i]),
+      d1: f(d1[i]),
+      d2: f(d2[i]),
+      sq1: f(sq1[i]),
+      sq2: f(sq2[i]),
+      product: f(products[i]),
+      sign: signOf(products[i]),
+    })),
+    sums: { x1: f(sum(x1)), x2: f(sum(x2)), d1: f(sum(d1)), d2: f(sum(d2)), sq1: f(sum(sq1)), sq2: f(sum(sq2)), product: f(sum(products)) },
+    steps,
+    points,
+    meanPoint: [means[0].toNumber(), means[1].toNumber()],
+    frame: { x: axis(points.map((p) => p[0]), columns[0]), y: axis(points.map((p) => p[1]), columns[1]), size: 8, equalAspect: false },
+    matrixTex: `S = ${matrixToTex([[t(variances[0]), t(covariance)], [t(covariance), t(variances[1])]], false, {})}`,
+    verdict:
+      c > 0
+        ? `Cov(x₁, x₂) = ${f(covariance)} > 0: when x₁ is above its mean, x₂ tends to be above its mean too.`
+        : c < 0
+          ? `Cov(x₁, x₂) = ${f(covariance)} < 0: when x₁ is above its mean, x₂ tends to be below its mean.`
+          : 'Cov(x₁, x₂) = 0: no straight-line trend. That is not the same as no relationship — x₂ may still depend on x₁.',
   };
 }

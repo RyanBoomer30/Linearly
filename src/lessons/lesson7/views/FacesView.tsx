@@ -131,7 +131,18 @@ export function FacesView() {
         {frame && (
           <>
             <StepperControls stepper={stepper} description={`${frame.rowsDone} row${frame.rowsDone === 1 ? '' : 's'} laid end to end`} />
-            {frame.row.length > 0 && <ImageView matrix={[frame.row]} caption={`A row of length ${frame.row.length}`} maxWidth={640} interactive={false} />}
+            <div className="image-pair">
+              {set.ok && <ImageView matrix={set.value.images[0]} caption={`A ${set.value.size} × ${set.value.size} face`} maxWidth={128} interactive={false} />}
+              {frame.row.length > 0 && (
+                <ImageView
+                  matrix={[frame.row]}
+                  caption={`The first ${frame.rowsDone} rows laid end to end: length ${frame.row.length} of ${faceOptions.size * faceOptions.size}`}
+                  maxWidth={Math.max(8, Math.round((640 * frame.row.length) / (faceOptions.size * faceOptions.size)))}
+                  height={24}
+                  interactive={false}
+                />
+              )}
+            </div>
           </>
         )}
       </section>

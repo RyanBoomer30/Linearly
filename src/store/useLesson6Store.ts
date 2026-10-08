@@ -1,10 +1,10 @@
 import { create } from 'zustand';
 import { ACTIONS, type Action, type GridCell, type Mdp, type Policy, type TerminalMode } from '../core/mdp';
 import { mulberry32, newSeed as freshSeed } from '../core/random';
-import { DEFAULT_RUNS, DEFAULT_SEED, lesson6PresetById, MAX_GRID, type Lesson6Preset } from '../presets/lesson6';
+import { DEFAULT_RUNS, DEFAULT_SEED, lesson6PresetById, MAX_GRID, MAX_STATS_ROWS, statsPresetById, type Lesson6Preset } from '../presets/lesson6';
 import type { NumberDisplay } from './useDataStore';
 
-export type Lesson6ViewId = 'gridworld' | 'learning' | 'bellman' | 'where' | 'optimal' | 'policyIteration' | 'valueIteration';
+export type Lesson6ViewId = 'gridworld' | 'learning' | 'bellman' | 'where' | 'optimal' | 'policyIteration' | 'valueIteration' | 'statistics';
 
 /** What a click on the grid does (L6-G1 editor, L6-B1 painter, L6-G4 inspector). */
 export type GridEditMode = 'inspect' | 'policy' | 'walls' | 'rewards' | 'terminals' | 'start';
@@ -49,6 +49,10 @@ export interface Lesson6State {
   qAnswerRevealed: boolean;
   /** L6-Q5 */
   qLearning: { episodes: number; alpha: number; epsilon: number };
+  /** Statistics primer: paired data (x₁, x₂), one row per observation, as editor strings. */
+  statsCells: string[][];
+  statsColumns: [string, string];
+  statsPresetId: string | null;
   notice: string | null;
 
   setSlip: (hundredths: number) => void;
@@ -88,10 +92,16 @@ export interface Lesson6State {
   setExperienceSteps: (steps: number) => void;
   revealQAnswer: () => void;
   setQLearning: (patch: Partial<Lesson6State['qLearning']>) => void;
+  setStatsCell: (row: number, col: number, value: string) => void;
+  /** At least 2 rows (the sample variance divides by n − 1), at most MAX_STATS_ROWS. */
+  addStatsRow: () => void;
+  removeStatsRow: () => void;
+  loadStatsPreset: (id: string) => void;
   dismissNotice: () => void;
 }
 
 const initial = lesson6PresetById('notesGrid')!;
+const initialStats = statsPresetById('ageHeight')!;
 const sameCell = (a: GridCell, b: GridCell) => a[0] === b[0] && a[1] === b[1];
 const hasCell = (list: GridCell[], cell: GridCell) => list.some((c) => sameCell(c, cell));
 const without = (list: GridCell[], cell: GridCell) => list.filter((c) => !sameCell(c, cell));
@@ -128,6 +138,9 @@ export const useLesson6Store = create<Lesson6State>((set) => ({
   qAnswerRevealed: false,
   // Enough exploration and a small enough step that Q visibly approaches Q* (its greedy policy matches π* on the notes' grid).
   qLearning: { episodes: 2000, alpha: 0.1, epsilon: 0.5 },
+  statsCells: initialStats.rows,
+  statsColumns: initialStats.columns,
+  statsPresetId: initialStats.id,
 
   setSlip: (slip) => set({ slip, presetId: null }),
   setPerfect: (perfect) => set((s) => ({ slip: perfect ? 0 : s.slip === 0 ? 10 : s.slip, presetId: null })),
@@ -236,5 +249,13 @@ export const useLesson6Store = create<Lesson6State>((set) => ({
   setExperienceSteps: (experienceSteps) => set({ experienceSteps }),
   revealQAnswer: () => set({ qAnswerRevealed: true }),
   setQLearning: (patch) => set((s) => ({ qLearning: { ...s.qLearning, ...patch } })),
+  setStatsCell: (row, col, value) =>
+    set((s) => ({ statsCells: s.statsCells.map((r, i) => (i === row ? r.map((x, j) => (j === col ? value : x)) : r)), statsPresetId: null })),
+  addStatsRow: () => set((s) => (s.statsCells.length >= MAX_STATS_ROWS ? s : { statsCells: [...s.statsCells, ['0', '0']], statsPresetId: null })),
+  removeStatsRow: () => set((s) => (s.statsCells.length <= 2 ? s : { statsCells: s.statsCells.slice(0, -1), statsPresetId: null })),
+  loadStatsPreset: (id) => {
+    const p = statsPresetById(id);
+    if (p) set({ statsCells: p.rows, statsColumns: p.columns, statsPresetId: p.id });
+  },
   dismissNotice: () => set({ notice: null }),
 }));

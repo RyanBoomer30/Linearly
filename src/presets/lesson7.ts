@@ -18,7 +18,7 @@ export const SVD_PRESETS: SvdPreset[] = [
     ],
   },
   {
-    // A 2 × 2 for the circle-to-ellipse picture (L7-S4): AᵀA = [[25, 15], [15, 25]], σ = √40, √10.
+    // A 2 × 2 for the circle-to-ellipse picture (L7-S4): AᵀA = [[25, 20], [20, 25]], σ = 3√5, √5.
     id: 'ellipse2x2',
     name: '2 × 2: circle to ellipse',
     A: [

@@ -5,6 +5,7 @@ import { GridworldView } from './views/GridworldView';
 import { LearningView } from './views/LearningView';
 import { OptimalView } from './views/OptimalView';
 import { PolicyIterationView } from './views/PolicyIterationView';
+import { StatisticsView } from './views/StatisticsView';
 import { ValueIterationView } from './views/ValueIterationView';
 import { WhereView } from './views/WhereView';
 
@@ -16,6 +17,7 @@ const VIEWS: { id: Lesson6ViewId; label: string; component: ComponentType }[] = 
   { id: 'optimal', label: 'Optimal value & best actions', component: OptimalView },
   { id: 'policyIteration', label: 'Policy iteration', component: PolicyIterationView },
   { id: 'valueIteration', label: 'Value iteration, Q-values & Q-learning', component: ValueIterationView },
+  { id: 'statistics', label: 'Sample mean, variance & covariance', component: StatisticsView },
 ];
 
 /** Lesson 6: Markov decision processes and reinforcement learning. One MDP and one painted policy are shared (§11). */

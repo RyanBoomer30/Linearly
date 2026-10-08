@@ -100,3 +100,63 @@ export const DEFAULT_SEED = 2026;
 export const DEFAULT_RUNS = 200;
 /** L6-G6: the notes' plan from state 10. */
 export const NOTES_PLAN: Action[] = ['up', 'up', 'right'];
+
+/**
+ * The statistics primer (beyond the Lesson 6 notes): paired data for the
+ * sample mean, sample variance and covariance that Lesson 7's covariance
+ * matrix is built from. Cells are editor strings, one row per observation.
+ */
+export interface StatsPreset {
+  id: string;
+  name: string;
+  columns: [string, string];
+  rows: string[][];
+  explanation: string;
+}
+
+export const STATS_PRESETS: StatsPreset[] = [
+  {
+    // Lesson 7's six people (notes §7.1) before centering: ages + 40, heights + 170. S = [[20, 25], [25, 40]].
+    id: 'ageHeight',
+    name: 'Age and height (Lesson 7’s people)',
+    columns: ['Age x₁', 'Height x₂'],
+    rows: [
+      ['43', '177'],
+      ['36', '164'],
+      ['47', '178'],
+      ['41', '169'],
+      ['36', '169'],
+      ['37', '163'],
+    ],
+    explanation: 'The six people of Lesson 7 before centering. Older tends to mean taller here, so the covariance is positive.',
+  },
+  {
+    id: 'negative',
+    name: 'Hours of TV and exam score',
+    columns: ['TV hours x₁', 'Score x₂'],
+    rows: [
+      ['1', '90'],
+      ['2', '85'],
+      ['3', '80'],
+      ['4', '70'],
+      ['5', '75'],
+    ],
+    explanation: 'Illustrative data: more TV tends to come with a lower score, so the covariance is negative.',
+  },
+  {
+    id: 'parabola',
+    name: 'x₂ = x₁² (zero covariance)',
+    columns: ['x₁', 'x₂'],
+    rows: [
+      ['-2', '4'],
+      ['-1', '1'],
+      ['0', '0'],
+      ['1', '1'],
+      ['2', '4'],
+    ],
+    explanation: 'x₂ is completely determined by x₁, yet the covariance is 0: covariance only measures a straight-line trend.',
+  },
+];
+
+export const statsPresetById = (id: string) => STATS_PRESETS.find((p) => p.id === id);
+export const MAX_STATS_ROWS = 50;

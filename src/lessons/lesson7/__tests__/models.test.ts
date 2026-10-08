@@ -66,7 +66,8 @@ describe('§11.1 SVD and the best rank-k approximation', () => {
   it('geometry: each vᵢ maps to σᵢuᵢ (L7-S4)', () => {
     const g = svdGeometry(matrix([[3, 0], [4, 5]]));
     expect(g.dim).toBe(2);
-    expect(g.axes.map((a) => a.sigma)).toEqual([expect.closeTo(Math.sqrt(40), 10), expect.closeTo(Math.sqrt(10), 10)]);
+    // AᵀA = [[25, 20], [20, 25]]: σ² = 45 and 5.
+    expect(g.axes.map((a) => a.sigma)).toEqual([expect.closeTo(Math.sqrt(45), 10), expect.closeTo(Math.sqrt(5), 10)]);
     for (const a of g.axes) {
       const Av = [3 * a.v[0], 4 * a.v[0] + 5 * a.v[1]];
       expect(Av[0]).toBeCloseTo(a.image[0], 10);

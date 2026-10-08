@@ -14,13 +14,15 @@ interface ImageViewProps {
   maxWidth?: number;
   /** Show the zoom buttons and the pixel-value readout. */
   interactive?: boolean;
+  /** A fixed display height in CSS pixels (the width stays maxWidth), e.g. for a 1 × n row unrolled from an image. */
+  height?: number;
 }
 
 /**
  * F-D13: a matrix shown as a grayscale image, with zoom and the value under
  * the pointer. Pixels stay crisp (no smoothing) so single entries can be seen.
  */
-export function ImageView({ matrix, signed = false, caption, maxWidth = 420, interactive = true }: ImageViewProps) {
+export function ImageView({ matrix, signed = false, caption, maxWidth = 420, interactive = true, height }: ImageViewProps) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const [zoom, setZoom] = useState(1);
   const [hover, setHover] = useState<{ row: number; col: number; value: number } | null>(null);
@@ -35,8 +37,9 @@ export function ImageView({ matrix, signed = false, caption, maxWidth = 420, int
   }, [pixels, rows, cols]);
 
   if (!pixels.ok) return <ViewNotice error={pixels.error} />;
-  const fit = Math.min(1, maxWidth / Math.max(1, cols));
-  const width = cols * fit * zoom;
+  // Large images shrink to fit; small ones (64 × 64 faces) grow by a whole factor so pixels stay square and crisp.
+  const fit = cols > maxWidth ? maxWidth / cols : Math.max(1, Math.floor(maxWidth / Math.max(1, cols)));
+  const width = height ? maxWidth : cols * fit * zoom;
 
   const onMove = (e: MouseEvent<HTMLCanvasElement>) => {
     const box = e.currentTarget.getBoundingClientRect();
@@ -52,7 +55,7 @@ export function ImageView({ matrix, signed = false, caption, maxWidth = 420, int
           ref={canvas}
           width={cols}
           height={rows}
-          style={{ width, imageRendering: 'pixelated' }}
+          style={{ width, height: height ?? 'auto', imageRendering: 'pixelated' }}
           onMouseMove={interactive ? onMove : undefined}
           onMouseLeave={() => setHover(null)}
           role="img"

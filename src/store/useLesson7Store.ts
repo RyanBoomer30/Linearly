@@ -2,9 +2,12 @@ import { create } from 'zustand';
 import type { FaceSetOptions } from '../core/faces';
 import type { FloatMatrix } from '../core/float';
 import type { Matrix } from '../core/matrix';
-import { notImplemented } from '../core/notImplemented';
+import { decodeImage, resizeTo, testPattern } from '../core/image';
+import { newSeed as freshSeed } from '../core/random';
 import type { ComponentSign } from '../core/pca';
-import { AGE_HEIGHT_ROWS, DEFAULT_FACE_COMPONENTS, DEFAULT_FACES, NOTES_CUTOFF, svdPresetById } from '../presets/lesson7';
+import { AGE_HEIGHT_ROWS, DEFAULT_FACE_COMPONENTS, DEFAULT_FACES, MAX_IMAGE_SIDE, NOTES_CUTOFF, svdPresetById, TEST_PATTERN_SIZE } from '../presets/lesson7';
+import { useLesson5Store } from './useLesson5Store';
+import { useStore } from './useStore';
 import type { NumberDisplay } from './useDataStore';
 
 export type Lesson7ViewId = 'svd' | 'image' | 'pca' | 'reduction' | 'covariance' | 'variance' | 'bestLine' | 'faces';
@@ -115,6 +118,10 @@ export interface Lesson7State {
 }
 
 const initialSvd = svdPresetById('notesExample')!;
+const MAX_TABLE_ROWS = 100;
+/** A dragged coordinate as editor text: 2 decimals is plenty. */
+const dragText = (x: number) => String(Number(x.toFixed(2)) + 0);
+const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 const replaceAt = <T,>(arr: T[], i: number, value: T) => arr.map((x, k) => (k === i ? value : x));
 const setGridCell = (grid: string[][], row: number, col: number, value: string) => replaceAt(grid, row, replaceAt(grid[row], col, value));
 
@@ -155,26 +162,65 @@ export const useLesson7Store = create<Lesson7State>((set) => ({
   dismissNotice: () => set({ notice: null }),
 
   setSvdCell: (row, col, value) => set((s) => ({ svdCells: setGridCell(s.svdCells, row, col, value), svdPresetId: null })),
-  resizeSvd: () => notImplemented('resizeSvd'),
+  resizeSvd: (rows, cols) =>
+    set((s) => {
+      if (rows < 1 || cols < 1 || rows > 4 || cols > 4) return s;
+      return {
+        svdCells: Array.from({ length: rows }, (_, i) => Array.from({ length: cols }, (_, j) => s.svdCells[i]?.[j] ?? '0')),
+        svdK: Math.min(s.svdK, Math.min(rows, cols)),
+        svdPresetId: null,
+      };
+    }),
   loadSvdPreset: (id) => {
     const p = svdPresetById(id);
     if (p) set({ svdCells: p.A, svdPresetId: p.id, svdK: 1 });
   },
   setSvdK: (svdK) => set({ svdK }),
-  openInLesson1: () => notImplemented('openInLesson1'),
-  openLesson5Layers: () => notImplemented('openLesson5Layers'),
+  openInLesson1: (A) => {
+    useStore.setState({
+      aCells: A.map((r) => r.map((x) => x.toString())),
+      bCells: A.map(() => '0'),
+      presetId: null,
+      view: 'bigPicture',
+      lesson: 1,
+      notice: null,
+    });
+    useStore.getState().setBigPictureMode('svd');
+  },
+  openLesson5Layers: () => {
+    useLesson5Store.getState().setView('layers');
+    useStore.getState().setLesson(5);
+  },
 
-  loadImageFile: () => notImplemented('loadImageFile'),
-  useTestPattern: () => notImplemented('useTestPattern'),
+  loadImageFile: async (file) => {
+    try {
+      const image = await decodeImage(file, MAX_IMAGE_SIDE);
+      set({ image, imageName: `${file.name} (${image.length} × ${image[0]?.length ?? 0}, grayscale)`, layerIndex: 0, notice: null });
+    } catch (e) {
+      set({ notice: `That image could not be read: ${message(e)}` });
+    }
+  },
+  useTestPattern: () =>
+    set({
+      image: testPattern(TEST_PATTERN_SIZE.rows, TEST_PATTERN_SIZE.cols),
+      imageName: `Generated test picture (${TEST_PATTERN_SIZE.rows} × ${TEST_PATTERN_SIZE.cols})`,
+      layerIndex: 0,
+      notice: null,
+    }),
   setImageK: (imageK) => set({ imageK }),
   setKMode: (kMode) => set({ kMode }),
   setCutoff: (cutoff) => set({ cutoff }),
   setLayerIndex: (layerIndex) => set({ layerIndex }),
 
   setPcaCell: (row, col, value) => set((s) => ({ pcaCells: setGridCell(s.pcaCells, row, col, value) })),
-  addPcaRow: () => notImplemented('addPcaRow'),
-  removePcaRow: () => notImplemented('removePcaRow'),
-  movePoint: () => notImplemented('movePoint'),
+  addPcaRow: () => set((s) => (s.pcaCells.length >= MAX_TABLE_ROWS ? s : { pcaCells: [...s.pcaCells, ['0', '0', '0']] })),
+  removePcaRow: (row) =>
+    set((s) => (s.pcaCells.length <= 2 ? s : { pcaCells: s.pcaCells.filter((_, i) => i !== row), selectedRow: null })),
+  movePoint: (row, [x, y]) =>
+    set((s) => ({
+      // The table holds the unshifted data, so take the demo shift back off.
+      pcaCells: s.pcaCells.map((r, i) => (i === row ? [dragText(x - s.shift), dragText(y - s.shift), ...r.slice(2)] : r)),
+    })),
   setShift: (shift) => set({ shift }),
   setStandardize: (standardize) => set({ standardize }),
   setSign: (sign) => set({ sign }),
@@ -186,9 +232,22 @@ export const useLesson7Store = create<Lesson7State>((set) => ({
   resetPcaData: () => set({ pcaCells: AGE_HEIGHT_ROWS, shift: 0 }),
 
   setFaceOptions: (patch) => set((s) => ({ faceOptions: { ...s.faceOptions, ...patch } })),
-  newFaceSeed: () => notImplemented('newFaceSeed'),
+  newFaceSeed: () =>
+    set((s) => {
+      let seed = freshSeed();
+      while (seed === s.faceOptions.seed) seed = freshSeed();
+      return { faceOptions: { ...s.faceOptions, seed } };
+    }),
   setFaceComponents: (faceComponents) => set({ faceComponents }),
   setFaceQuery: (faceQuery) => set({ faceQuery }),
   setFaceIndex: (faceIndex) => set({ faceIndex }),
-  loadFaceUpload: () => notImplemented('loadFaceUpload'),
+  loadFaceUpload: async (file) => {
+    try {
+      const image = await decodeImage(file, 512);
+      const { size } = useLesson7Store.getState().faceOptions;
+      set({ faceUpload: resizeTo(image, size, size), faceQuery: { kind: 'upload' }, notice: null });
+    } catch (e) {
+      set({ notice: `That image could not be read: ${message(e)}` });
+    }
+  },
 }));

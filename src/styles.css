@@ -62,7 +62,11 @@ select { background: var(--surface); border: 1px solid var(--border); border-rad
 .app-header h1 { margin: 0; font-size: 1.4rem; }
 .subtitle { color: var(--muted); flex: 1; }
 
-.lesson-nav { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.lesson-nav { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.lesson-section { flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.lesson-section-title { margin: 0; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.lesson-section-tabs { display: flex; gap: 6px; align-items: center; min-height: 100%; }
+.lesson-section-tabs > .coming-soon { padding: 0 12px; }
 .lesson-tab { display: flex; flex-direction: column; align-items: flex-start; min-width: 150px; text-align: left; }
 .lesson-tab.active { border-color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); }
 .lesson-number { font-size: 0.75rem; color: var(--muted); }
@@ -385,7 +389,7 @@ label.invalid input { border-color: #cc3311; }
 
 /* Lesson 7 ---------------------------------------------------------------------- */
 .image-view { margin: 0; display: flex; flex-direction: column; gap: 4px; }
-.image-view-frame { overflow: auto; border: 1px solid var(--border); background: var(--surface); }
+.image-view-frame { overflow: auto; border: 1px solid var(--border); background: var(--surface); width: fit-content; }
 .image-view-frame canvas { display: block; }
 .image-view-tools { display: flex; gap: 6px; align-items: center; }
 .image-view figcaption { color: var(--muted); font-size: 0.85rem; }

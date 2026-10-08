@@ -3,6 +3,7 @@ import { CORRIDOR, gridSpec, NOTES_GRID, NOTES_PI_STAR, st } from '../../../core
 import { policyIteration } from '../../../core/bellman';
 import { buildGridMdp, uniformPolicy, type Policy } from '../../../core/mdp';
 import { q, type Rational } from '../../../core/rational';
+import { STATS_PRESETS, statsPresetById } from '../../../presets/lesson6';
 import { collectExperience, estimateModel } from '../../../core/reinforcement';
 import {
   actionCompass,
@@ -20,6 +21,7 @@ import {
   mdpSummary,
   optimalityDerivation,
   optimalView,
+  parseStatsTable,
   planWithEstimate,
   policyIterationView,
   qLearningView,
@@ -27,6 +29,7 @@ import {
   returnView,
   robotSimulation,
   samplePaths,
+  statisticsView,
   transitionInspector,
   valueIterationView,
 } from '../models';
@@ -311,5 +314,54 @@ describe('§10.7 Value iteration and Q-values', () => {
     const a = qLearningView(mdp(), gamma, 'terminal', { episodes: 100, alpha: 0.5, epsilon: 0.2, seed: 1 });
     expect(a.chart.points).toHaveLength(100);
     expect(qLearningView(mdp(), gamma, 'terminal', { episodes: 100, alpha: 0.5, epsilon: 0.2, seed: 1 }).q).toEqual(a.q);
+  });
+});
+
+describe('statistics primer', () => {
+  const preset = (id: string) => {
+    const p = statsPresetById(id)!;
+    const t = parseStatsTable(p.rows);
+    return statisticsView(t.x1, t.x2, p.columns, 'fraction');
+  };
+
+  it('reproduces Lesson 7’s covariance matrix S = [[20, 25], [25, 40]] from the uncentered ages and heights', () => {
+    const v = preset('ageHeight');
+    expect(v.means.map(String)).toEqual(['40', '170']);
+    expect(v.variances.map(String)).toEqual(['20', '40']);
+    expect(v.covariance.toString()).toBe('25');
+    expect(v.sums.d1).toBe('0');
+    expect(v.sums.d2).toBe('0');
+    expect(v.stds[0]).toBeCloseTo(Math.sqrt(20), 12);
+  });
+
+  it('gives a negative covariance for the TV data and exactly 0 for x₂ = x₁²', () => {
+    expect(preset('negative').covariance.toString()).toBe('-45/4');
+    const parabola = preset('parabola');
+    expect(parabola.covariance.isZero()).toBe(true);
+    expect(parabola.rows.map((r) => r.sign)).toEqual([-1, 1, 0, -1, 1]);
+    expect(parabola.verdict).toMatch(/not the same as no relationship/);
+  });
+
+  it('every preset builds, with one step per quantity ending at S', () => {
+    for (const p of STATS_PRESETS) {
+      const v = preset(p.id);
+      expect(v.rows).toHaveLength(p.rows.length);
+      expect(v.steps.at(-1)!.tex).toContain('S =');
+    }
+  });
+
+  it('flags cells that do not parse and reads them as 0', () => {
+    const t = parseStatsTable([
+      ['1', 'x'],
+      ['3', '4'],
+    ]);
+    expect(t.invalid).toEqual([[0, 1]]);
+    expect(t.x2.map(String)).toEqual(['0', '4']);
+  });
+
+  it('needs at least 2 observations, and shortens long sums', () => {
+    expect(() => statisticsView([q(1)], [q(2)], ['x₁', 'x₂'], 'fraction')).toThrow(/at least 2/);
+    const xs = Array.from({ length: 20 }, (_, i) => q(i));
+    expect(statisticsView(xs, xs, ['x₁', 'x₂'], 'fraction').steps[0].tex).toContain('\\cdots');
   });
 });
